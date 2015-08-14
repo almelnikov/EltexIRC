@@ -73,16 +73,32 @@ static struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
   return ret;
 }
 
-static struct IRCUser *FindUserOnChan(struct IRCChannel *chan,
+static struct IRCUser **FindUserOnChan(struct IRCChannel *chan,
                                       const char *nick) {
   int i;
-  struct IRCUser *ret = NULL;
+  struct IRCUser **ret = NULL;
   char *str;
 
   for (i = 0; i < IRC_CHANUSERS_MAX; i++) {
-    str = chan->users[i]->nick;
-    if (strncmp(str, nick, IRC_NICK_MAX_LENGTH) == 0) {
-      ret = chan->users[i];
+    if (chan->users[i] != NULL) {
+      str = chan->users[i]->nick;
+      if (strncmp(str, nick, IRC_NICK_MAX_LENGTH) == 0) {
+        ret = &chan->users[i];
+        break;
+      }
+    }
+  }
+
+  return ret;
+}
+
+static struct IRCUser **FindEmptyChanSpace(struct IRCChannel *chan) {
+  int i;
+  struct IRCUser **ret = NULL;
+
+  for (i = 0; i < IRC_CHANUSERS_MAX; i++) {
+    if (chan->users[i] == NULL) {
+      ret = &chan->users[i];
       break;
     }
   }
@@ -90,12 +106,31 @@ static struct IRCUser *FindUserOnChan(struct IRCChannel *chan,
   return ret;
 }
 
-int AddUserToChannel(struct IRCAllChannels *channels, const char *channame,
-                     const char *nick) {
+int AddUserToChannel(struct IRCAllChannels *channels,
+                     struct IRCAllUsers *allusers,
+                     const char *channame, const char *nick) {
   int ret = 0;
+  struct IRCChannel *chan_ptr;
+  struct IRCUser *user_ptr;
+  struct IRCUser **duser_ptr;
 
   pthread_mutex_lock(&channels->lock);
-  
+  pthread_mutex_lock(&allusers->lock);
+  user_ptr = GetUserPtr(allusers, nick);
+  pthread_mutex_unlock(&allusers->lock);
+
+  chan_ptr = GetChannelPtr(channels, channame);
+  if (chan_ptr == NULL) {
+    ret = -1;
+  } else {
+    duser_ptr = FindEmptyChanSpace(chan_ptr);
+    if (duser_ptr == NULL) {
+      ret = -1;
+    }
+    else {
+      *duser_ptr = user_ptr;
+    }
+  }
   pthread_mutex_unlock(&channels->lock);
   return ret;
 }
@@ -103,15 +138,22 @@ int AddUserToChannel(struct IRCAllChannels *channels, const char *channame,
 int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
                           const char *nick) {
   int ret = 0;
-  struct IRCChannel *ptr;
+  struct IRCChannel *chan_ptr;
+  struct IRCUser **duser_ptr;
 
   pthread_mutex_lock(&channels->lock);
   // добавить проверку на валидные имя канала
-  ptr = GetChannelPtr(channels, channame);
-  if (ptr == NULL) {
+  chan_ptr = GetChannelPtr(channels, channame);
+  if (chan_ptr == NULL) {
     ret = -1;
   } else {
-    
+    duser_ptr = FindUserOnChan(chan_ptr, nick);
+    if (duser_ptr == NULL) {
+      ret = -1;
+    }
+    else {
+      duser_ptr = NULL;
+    }
   }
   pthread_mutex_unlock(&channels->lock);
 
