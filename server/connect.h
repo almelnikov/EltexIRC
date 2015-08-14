@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include "thread_info.h"
 
-#define IRC_MSG_SIZE 510
+#define IRC_MSG_SIZE 512
 #define IRC_MAX_CLIENT 20
 
 struct Client client_pool[IRC_MAX_CLIENT];
