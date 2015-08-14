@@ -57,14 +57,63 @@ int DelUser(struct IRCAllUsers *allusers, const char *nick) {
   return ret;
 }
 
-int AddUserToChannel() {
-  int ret = 0;
+static struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
+                                        const char *channame) {
+  int i;
+  struct IRCChannel *ret = NULL;
+  char *str;
+
+  for (i = 0; i < IRC_CHANNEL_MAX; i++) {
+    str = channels->channels[i].name;
+    if (strncmp(str, channame, IRC_CHANNAME_MAX_LENGTH) == 0) {
+      ret = &channels->channels[i];
+      break;
+    }
+  }
+  return ret;
+}
+
+static struct IRCUser *FindUserOnChan(struct IRCChannel *chan,
+                                      const char *nick) {
+  int i;
+  struct IRCUser *ret = NULL;
+  char *str;
+
+  for (i = 0; i < IRC_CHANUSERS_MAX; i++) {
+    str = chan->users[i]->nick;
+    if (strncmp(str, nick, IRC_NICK_MAX_LENGTH) == 0) {
+      ret = chan->users[i];
+      break;
+    }
+  }
 
   return ret;
 }
 
-int RemoveUserFromChannel() {
+int AddUserToChannel(struct IRCAllChannels *channels, const char *channame,
+                     const char *nick) {
   int ret = 0;
+
+  pthread_mutex_lock(&channels->lock);
+  
+  pthread_mutex_unlock(&channels->lock);
+  return ret;
+}
+
+int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
+                          const char *nick) {
+  int ret = 0;
+  struct IRCChannel *ptr;
+
+  pthread_mutex_lock(&channels->lock);
+  // добавить проверку на валидные имя канала
+  ptr = GetChannelPtr(channels, channame);
+  if (ptr == NULL) {
+    ret = -1;
+  } else {
+    
+  }
+  pthread_mutex_unlock(&channels->lock);
 
   return ret;
 }
