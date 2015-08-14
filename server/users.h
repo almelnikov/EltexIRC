@@ -37,5 +37,10 @@ struct IRCAllChannels {
 int DelUser(struct IRCAllUsers *allusers, const char *nick);
 int AddUser(struct IRCAllUsers *allusers, const char *nick,
             struct Client *thr);
+int AddUserToChannel(struct IRCAllChannels *channels,
+                     struct IRCAllUsers *allusers,
+                     const char *channame, const char *nick);
+int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
+                          const char *nick);
 
 #endif  // ELTEXIRC_SERVER_USERS_H_

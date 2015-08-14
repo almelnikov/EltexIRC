@@ -152,7 +152,7 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
       ret = -1;
     }
     else {
-      duser_ptr = NULL;
+      *duser_ptr = NULL;
     }
   }
   pthread_mutex_unlock(&channels->lock);
