@@ -1,7 +1,6 @@
 #include "users.h"
 
-static struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers,
-                                  const char *nick) {
+struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers, const char *nick) {
   int i;
   struct IRCUser *ret = NULL;
   char *str;
@@ -57,8 +56,8 @@ int DelUser(struct IRCAllUsers *allusers, const char *nick) {
   return ret;
 }
 
-static struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
-                                        const char *channame) {
+struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
+                                 const char *channame) {
   int i;
   struct IRCChannel *ret = NULL;
   char *str;
@@ -73,8 +72,7 @@ static struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
   return ret;
 }
 
-static struct IRCUser **FindUserOnChan(struct IRCChannel *chan,
-                                      const char *nick) {
+struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick) {
   int i;
   struct IRCUser **ret = NULL;
   char *str;

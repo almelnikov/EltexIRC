@@ -34,6 +34,7 @@ struct IRCAllChannels {
   struct IRCChannel channels[IRC_CHANNEL_MAX];
 };
 
+struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers, const char *nick);
 int DelUser(struct IRCAllUsers *allusers, const char *nick);
 int AddUser(struct IRCAllUsers *allusers, const char *nick,
             struct Client *thr);
@@ -42,5 +43,8 @@ int AddUserToChannel(struct IRCAllChannels *channels,
                      const char *channame, const char *nick);
 int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
                           const char *nick);
+struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
+                                 const char *channame);
+struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick);
 
 #endif  // ELTEXIRC_SERVER_USERS_H_
