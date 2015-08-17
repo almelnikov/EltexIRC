@@ -34,6 +34,8 @@ struct IRCAllChannels {
   struct IRCChannel channels[IRC_CHANNEL_MAX];
 };
 
+void UsersInit(struct IRCAllUsers *users);
+void ChannelsInit(struct IRCAllChannels *channels);
 struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers, const char *nick);
 int DelUser(struct IRCAllUsers *allusers, const char *nick);
 int AddUser(struct IRCAllUsers *allusers, const char *nick,
