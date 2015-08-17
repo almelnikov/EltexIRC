@@ -13,13 +13,15 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include "thread_info.h"
+#include "users.h"
 
 #define IRC_MSG_SIZE 513
-#define IRC_MAX_CLIENT 20
 
-struct Client client_pool[IRC_MAX_CLIENT];
+struct IRCAllUsers all_users;
+struct IRCAllChannels all_chan;
 
 int search_available();
 int IRC_Msg_Read(int sockfd, char *buf);
+void initialize(void);
 
 #endif

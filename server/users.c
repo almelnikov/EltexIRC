@@ -157,3 +157,13 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
 
   return ret;
 }
+
+void UsersInit(struct IRCAllUsers *users) {
+  memset(users, 0, sizeof(*users));
+  pthread_mutex_init(&users->lock, NULL);
+}
+
+void ChannelsInit(struct IRCAllChannels *channels) {
+  memset(channels, 0, sizeof(*channels));
+  pthread_mutex_init(&channels->lock, NULL);
+}
