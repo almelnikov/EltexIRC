@@ -13,6 +13,10 @@
 #define IRC_CHAN_BUF_SIZE (IRC_CHANNAME_MAX_LENGTH + 1)
 #define IRC_CHANNEL_MAX 32
 
+#define IRC_USERERR_CANTADD 1
+#define IRC_USERERR_NOTFOUND 2
+#define IRC_USERERR_EXIST 3
+
 struct IRCUser {
   struct Client *thr_info;
   char nick[IRC_NICK_BUF_SIZE];
@@ -37,6 +41,8 @@ struct IRCAllChannels {
 void UsersInit(struct IRCAllUsers *users);
 void ChannelsInit(struct IRCAllChannels *channels);
 struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers, const char *nick);
+int RenameUser(struct IRCAllUsers *allusers, const char *oldnick,
+               const char *newnick);
 int DelUser(struct IRCAllUsers *allusers, const char *nick);
 int AddUser(struct IRCAllUsers *allusers, const char *nick,
             struct Client *thr);
