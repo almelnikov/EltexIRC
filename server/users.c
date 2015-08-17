@@ -15,6 +15,22 @@ struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers, const char *nick) {
   return ret;
 }
 
+int RenameUser(struct IRCAllUsers *allusers, const char *oldnick,
+               const char *newnick) {
+  struct IRCUser *ptr;
+  int ret = 0;
+
+  pthread_mutex_lock(&allusers->lock);
+  ptr = GetUserPtr(allusers, oldnick);
+  if (ptr == NULL) {
+    ret = -1;
+  } else {
+    strcpy(ptr->nick, newnick);
+  }
+  pthread_mutex_unlock(&allusers->lock);
+  return ret;
+}
+
 int AddUser(struct IRCAllUsers *allusers, const char *nick,
             struct Client *thr) {
   struct IRCUser *ptr;
