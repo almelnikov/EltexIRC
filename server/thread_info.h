@@ -4,10 +4,10 @@
 #include <pthread.h>
 
 struct Client {
-	pthread_t pid;
-	int sockfd;
-	int index;
-    int internal_fd;
+  pthread_t pid;
+  int sockfd;
+  int index;
+  pthread_mutex_t send_lock;
 };
 
 #endif
