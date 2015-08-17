@@ -120,6 +120,20 @@ static struct IRCUser **FindEmptyChanSpace(struct IRCChannel *chan) {
   return ret;
 }
 
+int IsEmptyChannel(struct IRCChannel *chan) {
+  int i;
+  int ret = 1;
+
+  for (i = 0; i < IRC_CHANUSERS_MAX; i++) {
+    if (chan->users[i] != NULL) {
+      ret = 0;
+      break;
+    }
+  }
+
+  return ret;
+}
+
 int AddUserToChannel(struct IRCAllChannels *channels,
                      struct IRCAllUsers *allusers,
                      const char *channame, const char *nick) {
@@ -175,6 +189,9 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
     }
     else {
       *duser_ptr = NULL;
+      if (IsEmptyChannel(chan_ptr)) {
+        strcpy(chan_ptr->name, "");
+      }
     }
   }
   pthread_mutex_unlock(&channels->lock);
