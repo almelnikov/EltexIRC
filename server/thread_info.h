@@ -7,6 +7,7 @@ struct Client {
 	pthread_t pid;
 	int sockfd;
 	int index;
+    int internal_fd;
 };
 
 #endif
