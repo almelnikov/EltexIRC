@@ -1,6 +1,6 @@
 #include "connect.h"
 
-int search_available()
+int SearchAvailable()
 {
 	int index;
 	for (index = 0; index < IRC_USERS_MAX; index++){
@@ -11,7 +11,18 @@ int search_available()
 	return -1;
 }
 
-int IRC_Msg_Read(int sockfd, char *raw_msg)
+void Release(int index)
+{
+	struct Client *client = all_users.users[index].thr_info;
+	
+	close(all_users.users[index].thr_info->sockfd);
+	pthread_mutex_destroy(&all_users.users[index].thr_info->send_lock);
+	all_users.users[index].thr_info = NULL;
+	all_users.users[index].nick = NULL;
+	free(client);
+}
+
+int IRCMsgRead(int sockfd, char *raw_msg)
 {
 	char buf[IRC_MSG_SIZE];
 	int bytes, total = 0;

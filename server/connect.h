@@ -20,8 +20,8 @@
 struct IRCAllUsers all_users;
 struct IRCAllChannels all_chan;
 
-int search_available();
-int IRC_Msg_Read(int sockfd, char *buf);
-void initialize(void);
+int SearchAvailable();
+int IRCMsgRead(int sockfd, char *buf);
+void Release(int index);
 
 #endif
