@@ -7,9 +7,9 @@
 
 struct Client {
 	pthread_t pid;
-	pthread_mutex_t send_lock;
 	int sockfd;
-	char password[IRC_PASS_MAX];
+	int index;
+	pthread_mutex_t send_lock;
 };
 
 #endif //ELTEXIRC_THREAD_INFO_H

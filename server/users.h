@@ -1,7 +1,9 @@
 #ifndef ELTEXIRC_SERVER_USERS_H_
 #define ELTEXIRC_SERVER_USERS_H_
 
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include "thread_info.h"
 
@@ -12,6 +14,10 @@
 #define IRC_CHANNAME_MAX_LENGTH 63
 #define IRC_CHAN_BUF_SIZE (IRC_CHANNAME_MAX_LENGTH + 1)
 #define IRC_CHANNEL_MAX 32
+
+#define IRC_USERERR_CANTADD 1
+#define IRC_USERERR_NOTFOUND 2
+#define IRC_USERERR_EXIST 3
 
 struct IRCUser {
   struct Client *thr_info;
@@ -34,9 +40,16 @@ struct IRCAllChannels {
   struct IRCChannel channels[IRC_CHANNEL_MAX];
 };
 
+struct NamesList {
+  int cnt;
+  char **names;
+};
+
 void UsersInit(struct IRCAllUsers *users);
 void ChannelsInit(struct IRCAllChannels *channels);
 struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers, const char *nick);
+int RenameUser(struct IRCAllUsers *allusers, const char *oldnick,
+               const char *newnick);
 int DelUser(struct IRCAllUsers *allusers, const char *nick);
 int AddUser(struct IRCAllUsers *allusers, const char *nick,
             struct Client *thr);
@@ -48,5 +61,9 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
 struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
                                  const char *channame);
 struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick);
+struct NamesList GetChannelsList(struct IRCAllChannels *channels);
+void FreeNamesList(struct NamesList *list);
+int IsValidNick(const char *nick);
+int IsValidChannel(const char *chan);
 
 #endif  // ELTEXIRC_SERVER_USERS_H_
