@@ -5,11 +5,10 @@
 void *ClientHandler(void *arg)
 {
 	struct Client *client = ((struct Client *)arg);
-	struct ParsedMsg *msg;
+	struct ParsedMsg msg;
 	struct IRCUser *user = NULL;
 	char raw_msg[IRC_MSG_SIZE];
 	ssize_t bytes = 0;
-	int ret;
 
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -46,19 +45,10 @@ void *ClientHandler(void *arg)
 				break;
 			}
 			FormParsedMsg(raw_msg, &msg);
-			if (msg.cmd == IRCCMD_PASS) {
-				if (user != NULL) {
-					strncpy(user->thr_info->password, msg.param[0], ret);
-				}
-			} else if (msg.cmd == IRCCMD_QUIT) {
+			if (msg.cmd == IRCCMD_QUIT) {
 				break;
 			}
-			/*	if (msg.cmd == IRCCMD_KILL) {
-				user = GetUserPtr(&all_users, msg.params[0]);
-				if (pthread_cancel(user.thr_info->pid) != 0) 
-					perror("pthread_create");
-				Release();
-			}*/
+			
 		}
 	}
 	
@@ -72,10 +62,10 @@ int main(int argc, char *argv[])
 {
 	struct sockaddr_in ser_addr, cl_addr;
 	struct Client *client;
-	int listen_sock, connect, i;
+	int listen_sock, connect;
 	socklen_t len = (socklen_t)sizeof(struct sockaddr_in);
 	pthread_attr_t attr;
-	int opt = 1;
+	const int kOpt = 1;
 
 	if (argc != 3) {
 		printf("format: IP_ADDR PORT\n");
@@ -88,7 +78,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-	if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) == -1 ) {
+	if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &kOpt,
+								sizeof(int)) == -1 ) {
     perror("setsockopt");
 	}
 
@@ -113,8 +104,9 @@ int main(int argc, char *argv[])
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-	while(1) {
-		if ((connect = accept(listen_sock, (struct sockaddr *)&cl_addr, &len)) > 0) {
+	while (1) {
+		if ((connect = accept(listen_sock, (struct sockaddr *)&cl_addr,
+													&len)) > 0) {
 			client = malloc(sizeof(struct Client));
 			if (client == NULL) {
 				perror("malloc");
@@ -122,7 +114,8 @@ int main(int argc, char *argv[])
 			}
 			client->sockfd = connect;
 			pthread_mutex_init(&client->send_lock, NULL);
-			if (pthread_create(&(client->pid), &attr, ClientHandler, (void *)client) > 0) {
+			if (pthread_create(&(client->pid), &attr, ClientHandler,
+												(void *)client) > 0) {
 				perror("pthread_create");
 			}
 

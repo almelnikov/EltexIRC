@@ -12,4 +12,4 @@ struct Client {
 	char password[IRC_PASS_MAX];
 };
 
-#endif
+#endif //ELTEXIRC_THREAD_INFO_H

@@ -35,4 +35,4 @@ struct IRCAllChannels all_chan;
 int IRCMsgRead(int sockfd, char *buf);
 void Release(struct IRCUser *user);
 
-#endif
+#endif // ELTEXIRC_SERVER_CONNECT_H
