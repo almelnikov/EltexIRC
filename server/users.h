@@ -62,7 +62,7 @@ struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
                                  const char *channame);
 struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick);
 struct NamesList GetChannelsList(struct IRCAllChannels *channels);
-void FreeChannelsList(struct NamesList *list);
+void FreeNamesList(struct NamesList *list);
 int IsValidNick(const char *nick);
 int IsValidChannel(const char *chan);
 
