@@ -2,18 +2,7 @@
 #include "msgparse.h"
 #include "users.h"
 
-int search(pid_t pid)
-{
-	int index;
-	for (index = 0; index < IRC_USERS_MAX; index++) {
-		if (all_users.users[index].thr_info != NULL) {
-			if (all_users.users[index].thr_info->pid != pid) {
-				return index;
-			}
-		}
-	}
-	return -1;
-}
+
 	
 int parse(char *buf, ssize_t len)
 {
