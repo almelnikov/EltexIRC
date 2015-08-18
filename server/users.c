@@ -208,3 +208,26 @@ void ChannelsInit(struct IRCAllChannels *channels) {
   memset(channels, 0, sizeof(*channels));
   pthread_mutex_init(&channels->lock, NULL);
 }
+
+int IsValidNick(const char *nick) {
+  int ret;
+  if (strlen(nick) > IRC_NICK_MAX_LENGTH) {
+    ret = 0;
+  } else if (nick[0] == '\0' || nick[0] == '#') {
+    ret = 0;
+  } else {
+    ret = 1;
+  }
+}
+
+int IsValidChannel(const char *chan) {
+  int ret;
+  if (strlen(chan) > IRC_CHANNAME_MAX_LENGTH) {
+    ret =  0;
+  } else if (chan[0] != '#') {
+    ret = 0;
+  } else {
+    ret = 1;
+  }
+  return ret;
+}

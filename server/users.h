@@ -54,5 +54,7 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
 struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
                                  const char *channame);
 struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick);
+int IsValidNick(const char *nick);
+int IsValidChannel(const char *chan);
 
 #endif  // ELTEXIRC_SERVER_USERS_H_
