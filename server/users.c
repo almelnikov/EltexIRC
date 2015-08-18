@@ -199,14 +199,14 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
   return ret;
 }
 
-struct ChannelsList GetChannelsList(struct IRCAllChannels *channels) {
+struct NamesList GetChannelsList(struct IRCAllChannels *channels) {
   int i;
   char *str;
   size_t allocated = 0;
   int length;
   int shift = 0;
   char *names = NULL;
-  struct ChannelsList list = {
+  struct NamesList list = {
     .cnt = 0,
     .names = NULL
   };
@@ -244,7 +244,7 @@ struct ChannelsList GetChannelsList(struct IRCAllChannels *channels) {
   return list;
 }
 
-void FreeChannelsList(struct ChannelsList *list) {
+void FreeChannelsList(struct NamesList *list) {
   if (list->cnt > 0 && list->names != NULL) {
     free(*list->names);
     free(list->names);

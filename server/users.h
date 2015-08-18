@@ -40,7 +40,7 @@ struct IRCAllChannels {
   struct IRCChannel channels[IRC_CHANNEL_MAX];
 };
 
-struct ChannelsList {
+struct NamesList {
   int cnt;
   char **names;
 };
@@ -61,8 +61,8 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
 struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
                                  const char *channame);
 struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick);
-struct ChannelsList GetChannelsList(struct IRCAllChannels *channels);
-void FreeChannelsList(struct ChannelsList *list);
+struct NamesList GetChannelsList(struct IRCAllChannels *channels);
+void FreeChannelsList(struct NamesList *list);
 int IsValidNick(const char *nick);
 int IsValidChannel(const char *chan);
 
