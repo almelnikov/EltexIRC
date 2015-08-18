@@ -7,10 +7,9 @@
 
 struct Client {
 	pthread_t pid;
-	int sockfd;
-	int index;
-	char password[IRC_PASS_MAX];
 	pthread_mutex_t send_lock;
+	int sockfd;
+	char password[IRC_PASS_MAX];
 };
 
 #endif

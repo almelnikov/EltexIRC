@@ -1,25 +1,10 @@
 #include "connect.h"
 
-int SearchAvailable()
+void Release(struct IRCUser *user)
 {
-	int index;
-	for (index = 0; index < IRC_USERS_MAX; index++){
-		if (all_users.users[index].thr_info == NULL){
-			return index;
-		}
-	}
-	return -1;
-}
-
-void Release(int index)
-{
-	struct Client *client = all_users.users[index].thr_info;
-	
-	close(all_users.users[index].thr_info->sockfd);
-	pthread_mutex_destroy(&all_users.users[index].thr_info->send_lock);
-	all_users.users[index].thr_info = NULL;
-	all_users.users[index].nick = NULL;
-	free(client);
+	close(user->thr_info->sockfd);
+	pthread_mutex_destroy(&user->thr_info->send_lock);
+	DelUser(&all_users, user->nick);
 }
 
 int IRCMsgRead(int sockfd, char *raw_msg)

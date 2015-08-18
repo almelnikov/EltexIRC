@@ -17,11 +17,22 @@
 
 #define IRC_MSG_SIZE 513
 
+union RegistrationFlags
+{
+	struct flags
+	{
+		unsigned user:1;
+		unsigned nick:1;
+		unsigned fail:1;
+	}
+	unsigned clear;
+};
+
+union RegistrationFlags registered;
 struct IRCAllUsers all_users;
 struct IRCAllChannels all_chan;
 
-int SearchAvailable();
 int IRCMsgRead(int sockfd, char *buf);
-void Release(int index);
+void Release(struct IRCUser *user);
 
 #endif

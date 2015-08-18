@@ -2,24 +2,11 @@
 #include "msgparse.h"
 #include "users.h"
 
-
-	
-int parse(char *buf, ssize_t len)
-{
-	if (strncmp(buf, "hello", 5) == 0) 
-		return 1;
-	
-	if (strncmp(buf, "kill", 4) == 0) 
-		return 2;
-		
-	return -1;
-}
-
 void *ClientHandler(void *arg)
 {
 	struct Client *client = ((struct Client *)arg);
 	struct ParsedMsg *msg;
-	struct IRCUser *user = &all_users.users[client->index], ;
+	struct IRCUser *user = NULL;
 	char raw_msg[IRC_MSG_SIZE];
 	ssize_t bytes = 0;
 	int ret;
@@ -27,53 +14,57 @@ void *ClientHandler(void *arg)
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	
-	user->thr_info = client;
-
-	for (;;) {
+	registered.clear = 0;
+	
+	while (registered.flags.user == 0 && registered.flags.nick == 0) {
 		if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
-			printf("disconnected...\n");
+			printf("disconnected\n");
+			registered.flags.fail = 1;
 			break;
 		}
-		/*FormParsedMsg(raw_msg, &msg);
-		if (msg.cmd == IRCCMD_PASS) {
-			if (user->nick != NULL) {
-				ret = strlen(msg.params[0]);
-				if (ret <= IRC_PASS_MAX) {
-					strncpy(client->password, msg.params[0], ret);
+		FormParsedMsg(raw_msg, &msg);
+		if (msg.cmd == IRCCMD_USER) {
+			registered.flags.user = 1;
+		} else if (msg.cmd == IRCCMD_NICK) {
+			if (registered.flags.nick == 0) {
+				registered.flags.nick = 1;
+				if (AddUser(&all_users, msg.param[0], client) < 0) {
+					perror("AddUser faild");
+					registered.flags.fail = 1;
+				} else {
+					user = GetUserPtr(&all_users, msg.param[0]);
 				}
 			}
-		} else if (msg.cmd == IRCCMD_USER) {
-			ret = AddUser(&all_users, msh.params[0], 
-		} else if (msg.cmd == IRCCMD_PRIVMSG) {
-			//...
-		} else if (msg.cmd == IRCCMD_KILL) {
-			
-			/*user = GetUserPtr(&all_users, msg.params[0]);
-			if (pthread_cancel(user.thr_info->pid) != 0) 
-				perror("pthread_create");
-			Release();
-		}*/
-		printf("%s, %d\n", raw_msg, bytes);
-		ret = parse(raw_msg, bytes);
-		if (ret == 1) {
-			ret = search(client->pid);
-			write(all_users.users[ret].th_info->sockfd, "hey", 3);
-		} else if (ret == 2) {
-			printf("try kill..");
-			ret = search(client->pid);
-			if (ret != -1) {
-				if (pthread_cancel(all_users.users[ret].thr_info->pid) != 0) {
-					perror("pthread_cancel");
-				}
-				Release(ret);
+		}
+		FreeParseMsg(&msg);
+	}
+
+	if (!registered.flag.fail) {
+		for (;;) {
+			if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
+				printf("disconnected...\n");
+				break;
 			}
-		} else if (ret == -1) {
-			printf("oops\n");
+			FormParsedMsg(raw_msg, &msg);
+			if (msg.cmd == IRCCMD_PASS) {
+				if (user != NULL) {
+					strncpy(user->thr_info->password, msg.param[0], ret);
+				}
+			} else if (msg.cmd == IRCCMD_QUIT) {
+				break;
+			}
+			/*	if (msg.cmd == IRCCMD_KILL) {
+				user = GetUserPtr(&all_users, msg.params[0]);
+				if (pthread_cancel(user.thr_info->pid) != 0) 
+					perror("pthread_create");
+				Release();
+			}*/
 		}
 	}
 	
+	Release(user);
+	free(client);
 	printf("close...\n");
-	Release(client->index);
 	pthread_exit(NULL);
 }
 
@@ -118,21 +109,18 @@ int main(int argc, char *argv[])
 	}
 
 	UsersInit(&all_users);
+	ChannelsInit(&all_chan);
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	while(1) {
 		if ((connect = accept(listen_sock, (struct sockaddr *)&cl_addr, &len)) > 0) {
-			if ((i = SearchAvailable()) == -1) {
-				continue;
-			}
 			client = malloc(sizeof(struct Client));
 			if (client == NULL) {
 				perror("malloc");
 				break;
 			}
 			client->sockfd = connect;
-			client->index = i;
 			pthread_mutex_init(&client->send_lock, NULL);
 			if (pthread_create(&(client->pid), &attr, ClientHandler, (void *)client) > 0) {
 				perror("pthread_create");
@@ -148,5 +136,3 @@ int main(int argc, char *argv[])
 	close(listen_sock);
 	return 0;
 }
-
-
