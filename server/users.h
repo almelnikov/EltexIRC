@@ -1,7 +1,9 @@
 #ifndef ELTEXIRC_SERVER_USERS_H_
 #define ELTEXIRC_SERVER_USERS_H_
 
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include "thread_info.h"
 
@@ -38,6 +40,11 @@ struct IRCAllChannels {
   struct IRCChannel channels[IRC_CHANNEL_MAX];
 };
 
+struct ChannelsList {
+  int cnt;
+  char **names;
+};
+
 void UsersInit(struct IRCAllUsers *users);
 void ChannelsInit(struct IRCAllChannels *channels);
 struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers, const char *nick);
@@ -54,6 +61,8 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
 struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
                                  const char *channame);
 struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick);
+struct ChannelsList GetChannelsList(struct IRCAllChannels *channels);
+void FreeChannelsList(struct ChannelsList *list);
 int IsValidNick(const char *nick);
 int IsValidChannel(const char *chan);
 

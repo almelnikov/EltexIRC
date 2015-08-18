@@ -199,6 +199,60 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
   return ret;
 }
 
+struct ChannelsList GetChannelsList(struct IRCAllChannels *channels) {
+  int i;
+  char *str;
+  size_t allocated = 0;
+  int length;
+  int shift = 0;
+  char *names = NULL;
+  struct ChannelsList list = {
+    .cnt = 0,
+    .names = NULL
+  };
+
+  pthread_mutex_lock(&channels->lock);
+  for (i = 0; i < IRC_CHANNEL_MAX; i++) {
+    str = channels->channels[i].name;
+    if (strcmp(str, "") != 0) {
+      list.cnt++;
+      length = strlen(str) + 1;
+      allocated += length;
+      names = (char*)realloc(names, allocated);
+      if (names == NULL) {
+        list.cnt = 0;
+        break;
+      } else {
+        strcpy(names + shift, str);
+        shift += length;
+      }
+    }
+  }
+  if (list.cnt != 0) {
+    list.names = (char**)malloc(sizeof(char*) * list.cnt);
+    if (list.names == NULL) {
+      list.cnt = 0;
+    } else {
+      list.names[0] = names;
+      for (i = 1; i < list.cnt; i++) {
+        while (*(names++) != '\0');
+        list.names[i] = names;
+      }
+    }
+  }
+  pthread_mutex_unlock(&channels->lock);
+  return list;
+}
+
+void FreeChannelsList(struct ChannelsList *list) {
+  if (list->cnt > 0 && list->names != NULL) {
+    free(*list->names);
+    free(list->names);
+    list->cnt = 0;
+    list->names = NULL;
+  }
+}
+
 void UsersInit(struct IRCAllUsers *users) {
   memset(users, 0, sizeof(*users));
   pthread_mutex_init(&users->lock, NULL);
