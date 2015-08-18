@@ -15,7 +15,7 @@ void *ClientHandler(void *arg)
 	
 	registered.clear = 0;
 	
-	while (registered.flags.user == 0 && registered.flags.nick == 0) {
+	while (registered.flags.user == 0 || registered.flags.nick == 0) {
 		if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
 			printf("disconnected\n");
 			registered.flags.fail = 1;
@@ -27,32 +27,36 @@ void *ClientHandler(void *arg)
 		} else if (msg.cmd == IRCCMD_NICK) {
 			if (registered.flags.nick == 0) {
 				registered.flags.nick = 1;
-				if (AddUser(&all_users, msg.param[0], client) < 0) {
+				if (AddUser(&all_users, msg.params[0], client) < 0) {
 					perror("AddUser faild");
 					registered.flags.fail = 1;
 				} else {
-					user = GetUserPtr(&all_users, msg.param[0]);
+					user = GetUserPtr(&all_users, msg.params[0]);
 				}
 			}
 		}
-		FreeParseMsg(&msg);
+		FreeParsedMsg(&msg);
 	}
-
-	if (!registered.flag.fail) {
+  printf("successfully registered user: %s\n", user->nick);
+  /*
+	if (!registered.flags.fail) {
 		for (;;) {
 			if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
 				printf("disconnected...\n");
 				break;
 			}
+      printf("raw: %s\n", raw_msg);
 			FormParsedMsg(raw_msg, &msg);
 			if (msg.cmd == IRCCMD_QUIT) {
+        FreeParsedMsg(&msg);
 				break;
 			}
-			
+			FreeParsedMsg(&msg);
 		}
 	}
-	
-	Release(user);
+  */
+	if (user != NULL)
+    Release(user);
 	free(client);
 	printf("close...\n");
 	pthread_exit(NULL);
@@ -107,7 +111,7 @@ int main(int argc, char *argv[])
 	while (1) {
 		if ((connect = accept(listen_sock, (struct sockaddr *)&cl_addr,
 													&len)) > 0) {
-			client = malloc(sizeof(struct Client));
+			client = (struct Client *)malloc(sizeof(struct Client));
 			if (client == NULL) {
 				perror("malloc");
 				break;
