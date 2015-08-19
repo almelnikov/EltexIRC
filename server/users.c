@@ -7,7 +7,7 @@ struct IRCUser *GetUserPtr(struct IRCAllUsers *allusers, const char *nick) {
 
   for (i = 0; i < IRC_USERS_MAX; i++) {
     str = allusers->users[i].nick;
-    if (strncmp(str, nick, IRC_NICK_MAX_LENGTH) == 0) {
+    if (IRCStrcmp(str, nick) == 0) {
       ret = &allusers->users[i];
       break;
     }
@@ -89,7 +89,7 @@ struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
 
   for (i = 0; i < IRC_CHANNEL_MAX; i++) {
     str = channels->channels[i].name;
-    if (strncmp(str, channame, IRC_CHANNAME_MAX_LENGTH) == 0) {
+    if (IRCStrcmp(str, channame) == 0) {
       ret = &channels->channels[i];
       break;
     }
@@ -105,7 +105,7 @@ struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick) {
   for (i = 0; i < IRC_CHANUSERS_MAX; i++) {
     if (chan->users[i] != NULL) {
       str = chan->users[i]->nick;
-      if (strncmp(str, nick, IRC_NICK_MAX_LENGTH) == 0) {
+      if (IRCStrcmp(str, nick) == 0) {
         ret = &chan->users[i];
         break;
       }
