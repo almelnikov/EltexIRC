@@ -20,6 +20,9 @@ int RenameUser(struct IRCAllUsers *allusers, const char *oldnick,
   struct IRCUser *ptr;
   int ret = 0;
 
+  if (!IsValidNick(oldnick) || !IsValidNick(newnick)) {
+    return IRC_USERERR_NICK;
+  }
   pthread_mutex_lock(&allusers->lock);
   ptr = GetUserPtr(allusers, oldnick);
   if (ptr == NULL) {
@@ -37,6 +40,9 @@ int AddUser(struct IRCAllUsers *allusers, const char *nick,
   int ret = 0;
   int duplication_flag = 0;
 
+  if (!IsValidNick(nick)) {
+    return IRC_USERERR_NICK;
+  }
   pthread_mutex_lock(&allusers->lock);
   if (GetUserPtr(allusers, nick) != NULL) {
     duplication_flag = 1;
@@ -60,6 +66,9 @@ int DelUser(struct IRCAllUsers *allusers, const char *nick) {
   struct IRCUser *ptr;
   int ret = 0;
 
+  if (!IsValidNick(nick)) {
+    return IRC_USERERR_NICK;
+  }
   pthread_mutex_lock(&allusers->lock);
   ptr = GetUserPtr(allusers, nick);
   if (ptr == NULL) {
@@ -142,6 +151,12 @@ int AddUserToChannel(struct IRCAllChannels *channels,
   struct IRCUser *user_ptr;
   struct IRCUser **duser_ptr;
 
+  if (!IsValidNick(nick)) {
+    return IRC_USERERR_NICK;
+  }
+  if (!IsValidChannel(channame)) {
+    return IRC_USERERR_CHAN;
+  }
   pthread_mutex_lock(&channels->lock);
   pthread_mutex_lock(&allusers->lock);
   user_ptr = GetUserPtr(allusers, nick);
@@ -178,6 +193,12 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
   struct IRCChannel *chan_ptr;
   struct IRCUser **duser_ptr;
 
+  if (!IsValidNick(nick)) {
+    return IRC_USERERR_NICK;
+  }
+  if (!IsValidChannel(channame)) {
+    return IRC_USERERR_CHAN;
+  }
   pthread_mutex_lock(&channels->lock);
   chan_ptr = GetChannelPtr(channels, channame);
   if (chan_ptr == NULL) {
@@ -259,6 +280,9 @@ int GetUsersOnChannel(struct IRCAllChannels *channels, const char *channame,
     .names = NULL
   };
 
+  if (!IsValidChannel(channame)) {
+    return IRC_USERERR_CHAN;
+  }
   pthread_mutex_lock(&channels->lock);
   chan_ptr = GetChannelPtr(channels, channame);
   if (chan_ptr == NULL) {
@@ -317,27 +341,4 @@ void UsersInit(struct IRCAllUsers *users) {
 void ChannelsInit(struct IRCAllChannels *channels) {
   memset(channels, 0, sizeof(*channels));
   pthread_mutex_init(&channels->lock, NULL);
-}
-
-int IsValidNick(const char *nick) {
-  int ret;
-  if (strlen(nick) > IRC_NICK_MAX_LENGTH) {
-    ret = 0;
-  } else if (nick[0] == '\0' || nick[0] == '#') {
-    ret = 0;
-  } else {
-    ret = 1;
-  }
-}
-
-int IsValidChannel(const char *chan) {
-  int ret;
-  if (strlen(chan) > IRC_CHANNAME_MAX_LENGTH) {
-    ret =  0;
-  } else if (chan[0] != '#') {
-    ret = 0;
-  } else {
-    ret = 1;
-  }
-  return ret;
 }

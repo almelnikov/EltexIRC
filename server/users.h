@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include "thread_info.h"
 #include "irc_limits.h"
+#include "ircstr.h"
 
 #define IRC_USERS_MAX 64
 #define IRC_CHANUSERS_MAX 32
@@ -15,6 +16,8 @@
 #define IRC_USERERR_CANTADD 1
 #define IRC_USERERR_NOTFOUND 2
 #define IRC_USERERR_EXIST 3
+#define IRC_USERERR_NICK 4
+#define IRC_USERERR_CHAN 5
 
 struct IRCUser {
   struct Client *thr_info;
@@ -60,7 +63,5 @@ struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
 struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick);
 struct NamesList GetChannelsList(struct IRCAllChannels *channels);
 void FreeNamesList(struct NamesList *list);
-int IsValidNick(const char *nick);
-int IsValidChannel(const char *chan);
 
 #endif  // ELTEXIRC_SERVER_USERS_H_
