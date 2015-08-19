@@ -58,6 +58,9 @@ int FormParsedMsg(const char *str, struct ParsedMsg *msg) {
   int length;
   int i;
   int alloc_cnt;
+  
+  memset(buf, 0, 1024);
+  memset(tokenized, 0, 1024);
 
   // Начальные значения
   msg->optional = NULL;
