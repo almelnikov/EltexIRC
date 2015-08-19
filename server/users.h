@@ -6,13 +6,10 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include "thread_info.h"
+#include "irc_limits.h"
 
-#define IRC_NICK_MAX_LENGTH 63
-#define IRC_NICK_BUF_SIZE (IRC_NICK_MAX_LENGTH + 1)
 #define IRC_USERS_MAX 64
 #define IRC_CHANUSERS_MAX 32
-#define IRC_CHANNAME_MAX_LENGTH 63
-#define IRC_CHAN_BUF_SIZE (IRC_CHANNAME_MAX_LENGTH + 1)
 #define IRC_CHANNEL_MAX 32
 
 #define IRC_USERERR_CANTADD 1
