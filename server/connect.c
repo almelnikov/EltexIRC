@@ -64,59 +64,62 @@ void FreeThreadList(struct ThreadChanList *list)
 
 int FormSendMsg(char *output, char *msg, const char *nick)
 {
-  char buf[IRC_MSG_SIZE]; //preamble size
-  char hostname[HOSTNAME_MAX]; //изменить
-  int len = 0, shift = 0, cnt;
-
-  memset(&buf, 0, IRC_MSG_SIZE);
-  memset(&hostname, 0, HOSTNAME_MAX);
-  //подготовка преамбулы
+  char buf[IRC_MSG_MAX_LENGTH];
+  char hostname[IRC_HOST_MAX_LENGTH];
+  int shift = 0, index;
+  int nick_len = strlen(nick), host_len = 0, msg_len = 0;
+  
+  memset(&buf, 0, IRC_MSG_MAX_LENGTH);
+  memset(&hostname, 0, IRC_HOST_MAX_LENGTH);
+  
+  gethostname(hostname, sizeof(hostname));
+  host_len = strlen(hostname);
+  
+  if (host_len + 2 * nick_len + 3 >= IRC_HOST_MAX_LENGTH)
+    return -1;
+  
   buf[shift++] = ':';
-  len = strlen(nick);
-  for (cnt = 0; cnt < 2; cnt++) {
-    strncpy(buf + shift, nick, len);
-    shift += len;
+  for (index = 0; index < 2; index++) {
+    strncpy(buf + shift, nick, nick_len);
+    shift += nick_len;
     buf[shift++] = '!';
   }
   buf[shift - 1] = '@';
-
-  gethostname(hostname, sizeof hostname);
-  len = strlen(hostname);
-  if (len + shift >= PREAMBLE_SIZE) {
-    return -1;
-  } else {
-    strncpy(buf + shift, hostname, len);
-    shift += len;
-  }
+  
+  strncpy(buf + shift, hostname, host_len);
+  shift += host_len;
+  
   buf[shift++] = ' ';
-
-  //копируем сообщение
-  len = strlen(msg);
-  strncpy(buf + shift, msg, len);
-  shift += len;
   
-  strncpy(buf + shift, "\r\n", 2);
-  shift += 2;
+  msg_len = strlen(msg);
   
- // buf[shift] = '\0';
-  memcpy(output, buf, shift);
-  output[shift] = '\0';
-
-  return 0;
+  if (shift + msg_len + 2 < IRC_MSG_MAX_LENGTH) {
+    strncpy(buf + shift, msg, msg_len);
+    shift += msg_len;
+  
+    strncpy(buf + shift, "\r\n", 2);
+    shift += 2;
+    
+    memcpy(output, buf, shift);
+    output[shift] = '\0';
+    return 0;
+  } else {
+    return -1;
+  }
 }
 
 int IRCMsgRead(int sockfd, char *raw_msg)
 {
-  char buf[IRC_MSG_SIZE];
+  char buf[IRC_MSG_MAX_LENGTH];
   int bytes, total = 0;
   for (;;) {
-    if (total >= IRC_MSG_SIZE)
+    if (total >= IRC_MSG_MAX_LENGTH)
       return -1;
     if ((bytes = read(sockfd, &buf[total], 1)) <= 0)
       return -1;
 
     if (buf[total] == '\r') {
-      if (++total < IRC_MSG_SIZE) {
+      if (++total < IRC_MSG_MAX_LENGTH) {
         if (read(sockfd, &buf[total], 1) <= 0)
           return -1;
         if (buf[total] == '\n') {

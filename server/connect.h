@@ -14,11 +14,7 @@
 #include <fcntl.h>
 #include "thread_info.h"
 #include "users.h"
-
-
-#define PREAMBLE_SIZE 200 //исправить
-#define HOSTNAME_MAX 2 * IRC_NICK_MAX_LENGTH + 2
-#define IRC_MSG_SIZE 513
+#include "irc_limits.h"
 
 union RegistrationFlags
 {
@@ -34,7 +30,7 @@ union RegistrationFlags
 
 struct ThreadChanNode
 {
-  char chan[20];
+  char chan[IRC_CHAN_BUF_SIZE];
   struct ThreadChanNode *next;
 };
 

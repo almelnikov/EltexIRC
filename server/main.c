@@ -10,8 +10,13 @@ void *ClientHandler(void *arg)
     .size = 0,
     .head = NULL
   };
+  struct NamesList name_list = {
+    .cnt = 0,
+    .names = NULL
+  };
   struct ThreadChanNode *ptr;
-  char raw_msg[IRC_MSG_SIZE];
+  char raw_msg[IRC_MSG_MAX_LENGTH];
+  char send_msg[IRC_MSG_MAX_LENGTH];
   char nick[IRC_NICK_BUF_SIZE];
   ssize_t bytes = 0;
   int ret, index;
@@ -21,7 +26,8 @@ void *ClientHandler(void *arg)
 
   registered.clear = 0;
 
-  memset(&raw_msg, 0, IRC_MSG_SIZE);
+  memset(&raw_msg, 0, IRC_MSG_MAX_LENGTH);
+  memset(&send_msg, 0, IRC_MSG_MAX_LENGTH);
   memset(&nick, 0, IRC_NICK_BUF_SIZE);
 
   while (registered.flags.user == 0 || registered.flags.nick == 0) {
@@ -36,14 +42,17 @@ void *ClientHandler(void *arg)
       registered.flags.user = 1;
     } else if (msg.cmd == IRCCMD_NICK) {
       if (registered.flags.nick == 0) {
-        registered.flags.nick = 1;
-        if (AddUser(&all_users, msg.params[0], client) < 0) {
-          perror("AddUser failed");
+        ret = AddUser(&all_users, msg.params[0], client);
+        if (ret == IRC_USERERR_EXIST || ret == IRC_USERERR_NICK) {
+          perror("IRC_USERERR");
+          continue;
+        } else if (ret == IRC_USERERR_CANTADD) {
           registered.flags.fail = 1;
         } else {
           ret = strlen(msg.params[0]);
           strncpy(nick, msg.params[0], ret);
           nick[ret] = '\0';
+          registered.flags.nick = 1;
         }
       }
     }
@@ -70,6 +79,11 @@ void *ClientHandler(void *arg)
           if (AddUserToChannel(&all_chan, &all_users, msg.params[0], nick) == 0) {
             printf("add to channel %s\n", msg.params[0]);
             chan_list.head = ThrListAddFront(&chan_list, msg.params[0]);
+            if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
+              SendMsgToUser(&all_users, nick, send_msg);
+              SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg);
+            }
+            printf("TO SEND: %s\n", send_msg);
           } else {
             perror("AddUserToChannel failed");
           }
@@ -77,14 +91,15 @@ void *ClientHandler(void *arg)
 
         case IRCCMD_PRIVMSG:
           if (msg.cnt == 2) {
-            FormSendMsg(raw_msg, msg.params[1], nick);
-            printf("send %s \nto %s len %d\n", raw_msg, msg.params[0],
-                                             strlen(raw_msg));
-            if (msg.params[0][0] == '#') {
-              if (SendMsgToChannel(&all_chan, msg.params[0], nick, raw_msg) < 0)
-                perror("SendMsgToChannel failed");
-            } else {
-              SendMsgToUser(&all_users, msg.params[0], raw_msg);
+            if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
+              printf("send %s \nto %s len %d\n", send_msg, msg.params[0],
+                                                strlen(send_msg));
+              if (msg.params[0][0] == '#') {
+                if (SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg) < 0)
+                  perror("SendMsgToChannel failed");
+              } else {
+                SendMsgToUser(&all_users, msg.params[0], send_msg);
+              }
             }
           }
           break;
@@ -98,9 +113,14 @@ void *ClientHandler(void *arg)
           
         case IRCCMD_NICK:
           printf("change nick: %s -> %s\n", nick, msg.params[0]);
-          ret = strlen(msg.params[0]);
-          strncpy(nick, msg.params[0], ret);
-          nick[ret] = '\0';
+          if (RenameUser(&all_users, nick, msg.params[0]) == 0) { 
+            ret = strlen(msg.params[0]);
+            strncpy(nick, msg.params[0], ret);
+            nick[ret] = '\0';
+          } else {
+            perror("RenameUser");
+          }
+          break;
       }
       FreeParsedMsg(&msg);
     }
