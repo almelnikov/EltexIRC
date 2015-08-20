@@ -49,10 +49,10 @@ void *ClientHandler(void *arg)
     }
     FreeParsedMsg(&msg);
   }
-  printf("successfully registered user: %s\n", nick);
-  registered.flags.connect = 1;
 
   if (!registered.flags.fail) {
+    printf("successfully registered user: %s\n", nick);
+    registered.flags.connect = 1;
     while (registered.flags.connect) {
       if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
 				printf("disconnected...\n");
@@ -95,6 +95,12 @@ void *ClientHandler(void *arg)
             chan_list.head = DeleteThrNode(&chan_list, msg.params[index]);
           }
           break;
+          
+        case IRCCMD_NICK:
+          printf("change nick: %s -> %s\n", nick, msg.params[0]);
+          ret = strlen(msg.params[0]);
+          strncpy(nick, msg.params[0], ret);
+          nick[ret] = '\0';
       }
       FreeParsedMsg(&msg);
     }
