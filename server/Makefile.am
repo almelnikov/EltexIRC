@@ -1,6 +1,6 @@
 bin_PROGRAMS=irc
-irc_SOURCES=main.c connect.c connect.h msgparse.h thread_info.h \
-						users.c users.h msgparse.c privmsgsend.c privmsgsend.h \
-						ircstr.c ircstr.h
+irc_SOURCES=main.c connect.c connect.h thread_info.h \
+            users.c users.h privmsgsend.c privmsgsend.h
 
-LDADD=-lpthread
+AM_CPPFLAGS = -I$(top_srcdir)/lib
+LDADD=$(top_srcdir)/lib/libeltirc.a -lpthread

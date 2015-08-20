@@ -1,1 +1,1 @@
-SUBDIRS=server
+SUBDIRS=lib server
