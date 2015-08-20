@@ -36,7 +36,7 @@ void *ClientHandler(void *arg)
       registered.flags.fail = 1;
       break;
     }
-    printf("raw: %s len %d\n", raw_msg, strlen(raw_msg));
+    printf("raw: %s len %d\n", raw_msg, (int)strlen(raw_msg));
     FormParsedMsg(raw_msg, &msg);
     if (msg.cmd == IRCCMD_USER) {
       registered.flags.user = 1;
@@ -67,7 +67,7 @@ void *ClientHandler(void *arg)
 				printf("disconnected...\n");
 				break;
 			}
-      printf("raw: %s len %d\n", raw_msg, strlen(raw_msg));
+      printf("raw: %s len %d\n", raw_msg, (int)strlen(raw_msg));
 			FormParsedMsg(raw_msg, &msg);
 
       switch (msg.cmd) {
@@ -93,7 +93,7 @@ void *ClientHandler(void *arg)
           if (msg.cnt == 2) {
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               printf("send %s \nto %s len %d\n", send_msg, msg.params[0],
-                                                strlen(send_msg));
+                                                (int)strlen(send_msg));
               if (msg.params[0][0] == '#') {
                 if (SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg) < 0)
                   perror("SendMsgToChannel failed");
