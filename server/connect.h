@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include "thread_info.h"
 #include "users.h"
+#include "irc_msgread.h"
 
 
 #define PREAMBLE_SIZE 200 //исправить
@@ -48,7 +49,6 @@ union RegistrationFlags registered;
 struct IRCAllUsers all_users;
 struct IRCAllChannels all_chan;
 
-int IRCMsgRead(int sockfd, char *buf);
 struct ThreadChanNode *CreateThrNode(char *data);
 struct ThreadChanNode *ThrListAddFront(struct ThreadChanList *list,
                                 char *chan);
