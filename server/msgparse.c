@@ -1,13 +1,5 @@
 #include "msgparse.h"
 
-static int IsIRCEndChar(char c) {
-  if (c == '\0' || c == '\r' || c == '\n') {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
 enum IRCCommands GetIRCCommand(const char *str) {
   char *command;
   int length, i;
@@ -57,8 +49,7 @@ int FormParsedMsg(const char *str, struct ParsedMsg *msg) {
   int shift = 0;
   int length;
   int i;
-  int alloc_cnt;
-  
+
   memset(buf, 0, 1024);
   memset(tokenized, 0, 1024);
 
