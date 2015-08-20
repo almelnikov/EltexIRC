@@ -1,6 +1,8 @@
 *.o
+*.a
 *~
 *.tmp
+*.swp
 Makefile
 Makefile.in
 aclocal.m4
@@ -12,7 +14,7 @@ configure
 depcomp
 install-sh
 missing
-server/.deps/
+*/.deps/
 server/1
 server/Makefile
 server/Makefile.in

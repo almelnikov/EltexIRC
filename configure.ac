@@ -7,6 +7,7 @@ AC_CONFIG_SRCDIR([server/main.c])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_RANLIB
 
 # Checks for libraries.
 
@@ -16,4 +17,4 @@ AC_PROG_CC
 
 # Checks for library functions.
 
-AC_OUTPUT([Makefile] [server/Makefile])
+AC_OUTPUT([Makefile] [server/Makefile] [lib/Makefile])
