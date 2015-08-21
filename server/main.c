@@ -114,12 +114,13 @@ void *ClientHandler(void *arg)
 
         case IRCCMD_PART:
           if (msg.cnt != 0) {
-            RemoveUserFromChannel(&all_chan, msg.params[0], nick);
+            RemoveUserFromChannel(&all_chan, &all_users, msg.params[0], nick);
             chan_list.head = DeleteThrNode(&chan_list, msg.params[0]);
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               printf("send %s \nto %s\n", send_msg, msg.params[0]);
               SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg);
             }
+          }
           break;
           
         case IRCCMD_NICK:
