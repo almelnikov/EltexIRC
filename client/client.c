@@ -505,7 +505,8 @@ void *get_message(void *arg)
 
     while(exit_client != 0) {
 	for(p = list; p != NULL ; p = p->next) {
-//	    if(strcmp(p->window, now_canal) == 0) {
+	    if(strcmp(p->window, now_canal) == 0) {
+		usleep(10);
 		mvwprintw(sub_chat, 0 + offset_all, 0, "%s:%s", p->window, p->buf);
 		offset_dev = (strlen(p->buf))%count_col;
 		if(offset_dev != 0) {
@@ -540,7 +541,7 @@ void *get_message(void *arg)
 		wrefresh(sub_chat);
 		wmove(sub_input, 0, 0);
 		wrefresh(sub_input);
-//	    }
+	    }
 	}
     }
     return NULL;
