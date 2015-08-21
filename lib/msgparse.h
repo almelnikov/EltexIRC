@@ -31,5 +31,6 @@ struct ParsedMsg {
 
 int FormParsedMsg(const char *str, struct ParsedMsg *msg);
 void FreeParsedMsg(struct ParsedMsg *msg);
+char *GetNickFromHost(struct ParsedMsg *msg);
 
 #endif  // ELTEXIRC_SERVER_MSGPARSE_H_
