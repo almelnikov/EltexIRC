@@ -23,7 +23,7 @@
 #define USER_N 2
 
 WINDOW *chat, *canal, *input, *user, *sub_chat, *sub_canal, *sub_user, *sub_input, *sub_info;
-int count_user, count_canal, count_row, count_col, exit_client, offset_all, port, sock, new_sock;
+int count_user, count_canal, count_row, count_col, exit_client, offset_all, port, sock;
 char *canal_name, *user_name;
 char now_canal[68], my_name[68], ip[32];
 
@@ -284,8 +284,8 @@ void restart()
 int key(char *buf_input)
 {
     int key = 0, flag = INPUT_N, x = 0, y_us = 0, y_can = 0, count_y = 0, count_y_us = 0;
-    chtype c_canal[68];
-    char name_canal[68];
+    chtype c_canal[68], c_user[68];
+    char name_canal[68], name_user[68], buf_tmp[512];
     int index_n_c = 0;
     int index_buf_input = 0;
 
@@ -359,20 +359,21 @@ int key(char *buf_input)
 	    }
 	    case KEY_BACKSPACE: {
 		buf_input[--index_buf_input] = '\0';
-		key = 0;
 		wclear(sub_input);
 		wprintw(sub_input, "%s", buf_input);
 		refresh();
 		wrefresh(sub_input);
+		break;
 	    }
 	    default: {
 		if(index_buf_input <= 400) {
 		    buf_input[index_buf_input++] = key;
 		    wclear(sub_input);
-		    wprintw(sub_input, "%s", buf_input);
+		    mvwprintw(sub_input, 0, 0, "%s", buf_input);
 		    refresh();
 		    wrefresh(sub_input);
 		}
+		break;
 	    }
 	}
     }
@@ -387,7 +388,6 @@ int key(char *buf_input)
 	memset(now_canal, 0, 68);
 	for(index_n_c = 0; (index_n_c < 68) && (c_canal[index_n_c] != ' '); index_n_c++)
 	    name_canal[index_n_c] = (c_canal[index_n_c] & A_CHARTEXT);
-//	mvwprintw(sub_chat, 0, 0, "canal %s", name_canal);
 	strcpy(now_canal, name_canal);
 	offset_all = 0;
 	wclear(sub_chat);
@@ -398,38 +398,74 @@ int key(char *buf_input)
 	wrefresh(sub_chat);
 	wrefresh(sub_input);
 
-	return 0;
+	return CANAL_N;
     }
-    wclear(sub_input);
-    refresh();
-    wrefresh(sub_input);
-    return 1;
+    else if((key == ENTER) && (flag == USER_N)) {
+	wclear(sub_input);
+	mvwinchstr(sub_user, y_us, x, c_user);
+
+	memset(name_user, 0, 68);
+	memset(buf_tmp, 0, 512);
+
+	for(index_n_c = 0; (index_n_c < 68) && (c_user[index_n_c] != ' '); index_n_c++)
+	    name_user[index_n_c] = (c_user[index_n_c] & A_CHARTEXT);
+	strcpy(buf_tmp, name_user);
+	strcat(buf_tmp, " :");
+	strcat(buf_tmp, buf_input);
+	memset(buf_input, 0, 512);
+	strcpy(buf_input, buf_tmp);
+	memset(buf_tmp, 0, 512);
+
+	refresh();
+	wrefresh(sub_input);
+
+	return USER_N;
+    }
+    else {
+	wclear(sub_input);
+	refresh();
+	wrefresh(sub_input);
+	return INPUT_N;
+    }
 }
 
-void IrcMsgSend_priv(char *buf_input)
+void IrcMsgSend_canal(char *buf_input)
 {
-    char buf_send_serv[512];
-    memset(buf_send_serv, 0, 512);
+    char buf_send_server[512];
+    memset(buf_send_server, 0, 512);
 
-    strcpy(buf_send_server, "PRIVMSG #");
+    strcpy(buf_send_server, "PRIVMSG ");
     strcat(buf_send_server, now_canal);
-    strcat(buf_send_server, " : ");
+    strcat(buf_send_server, " :");
     strcat(buf_send_server, buf_input);
     strcat(buf_send_server, "\r\n");
 
     send(sock, buf_send_server, strlen(buf_send_server), 0);
 }
 
-void IrcMsgSend_com(char *buf_input)
+void IrcMsgSend_command(char *buf_input)
 {
-    char buf_send_serv[512];
-    memset(buf_send_serv, 0, 512);
+    char buf_send_server[512];
+    memset(buf_send_server, 0, 512);
     
-    buf_send_serv = (buf_input + 1);
+    strcpy(buf_send_server, (buf_input + 1));
     strcat(buf_send_server, "\r\n");
 
     send(sock, buf_send_server, strlen(buf_send_server), 0);
 }
+
+void IrcMsgSend_user(char *buf_input)
+{
+    char buf_send_server[512];
+    memset(buf_send_server, 0, 512);
+    
+    strcpy(buf_send_server, "PRIVMSG ");
+    strcat(buf_send_server, buf_input);
+    strcat(buf_send_server, "\r\n");
+
+    send(sock, buf_send_server, strlen(buf_send_server), 0);
+}
+
 
 void irc()
 {
@@ -440,18 +476,21 @@ void irc()
     memset(buf_input, 0, 512);
     while(exit_client != 0) {
 	err = key(buf_input);
-	if(err == 0 || (strlen(buf_input) == 0)) continue;
+	if(err == CANAL_N || (strlen(buf_input) == 0)) continue;
 	if(strcmp(buf_input, "EXIT") == 0) {
 	    exit_client = 0;
 	    continue;
 	}
-	if(buf_input[0] != '/') {
+	if((buf_input[0] != '/') && (err == INPUT_N)) {
 	    list = add(list, buf_input, now_canal);
-	    IrcMsgSend_priv(buf_input);
+	    IrcMsgSend_canal(buf_input);
 	}
-	else {
-	    list = add(list, buf_input + 1, "server");
-	    IrcMsgSend_com(buf_input);
+	else if((buf_input[0] != '/') && (err == USER_N)) {
+	    list = add(list, buf_input, now_canal);
+	    IrcMsgSend_user(buf_input);
+	}
+	else if((buf_input[0] == '/')){
+	    IrcMsgSend_command(buf_input);
 	}
 	memset(buf_input, 0, 512);
 	refresh();
@@ -466,7 +505,7 @@ void *get_message(void *arg)
 
     while(exit_client != 0) {
 	for(p = list; p != NULL ; p = p->next) {
-	    if(strcmp(p->window, now_canal) == 0) {
+//	    if(strcmp(p->window, now_canal) == 0) {
 		mvwprintw(sub_chat, 0 + offset_all, 0, "%s:%s", p->window, p->buf);
 		offset_dev = (strlen(p->buf))%count_col;
 		if(offset_dev != 0) {
@@ -501,7 +540,7 @@ void *get_message(void *arg)
 		wrefresh(sub_chat);
 		wmove(sub_input, 0, 0);
 		wrefresh(sub_input);
-	    }
+//	    }
 	}
     }
     return NULL;
@@ -533,10 +572,6 @@ void connect_sock(int argc, char **argv)
 	printf("error connect\n");
 	exit(0);
     }
-
-    //sms. connect - yes
-//	send(sock, &mes, sizeof(mes), 0);
-//	mlen = recv(sock, &mes, sizeof(mes), 0);
 }
 
 void send_start_sms()
@@ -556,10 +591,59 @@ void send_start_sms()
     send(sock, start_sms, strlen(start_sms), 0);
 }
 
+int ParsedStructServer(struct ParsedMsg *message)
+{
+    switch(message->cmd) {
+	case IRCCMD_PRIVMSG: {
+	    if(message->cnt < 2) return -1;
+	    if(message->params[0][0] == '#') {
+		list = add(list, message->params[0], message->params[1]);
+		refresh();
+	    }
+	    else {
+		list = add(list, message->params[0], now_canal);
+		refresh();
+	    }
+	    break;
+	}
+	case IRCCMD_JOIN: {
+	    if(message->cnt < 1) return -1;
+	    strcat(canal_name, "\n");
+	    strcat(canal_name, message->params[0]);
+	    count_canal++;
+	    write_canal();
+	    break;
+	}
+	default: {
+	    list = add(list, message->params[1], "server");
+	    break;
+	}
+    }
+    return 0;
+}
+
+void *listen_server(void *arg) 
+{
+    char buf_stock[512];
+    struct ParsedMsg message;
+    int err, err_parse;
+
+    for(;;) {
+	memset(buf_stock, 0, 512);
+	err = IRCMsgRead(sock, buf_stock);
+	if(err == -1) break;
+	FormParsedMsg(buf_stock, &message);
+	err_parse = ParsedStructServer(&message);
+	if(err_parse == -1) continue;
+	memset(buf_stock, 0, 512);
+    }
+    exit_client = 0;
+}
+
 int main(int argc, char **argv)
 {
-    pthread_t pth;
-    int pth_get;
+    pthread_t pth, lis_server;
+    int pth_get, pth_listen;
     
     connect_sock(argc, argv);
     send_start_sms();
@@ -572,6 +656,9 @@ int main(int argc, char **argv)
 
     pth_get = pthread_create(&pth, NULL, get_message, NULL);
     assert(pth_get == 0);
+
+    pth_listen = pthread_create(&lis_server, NULL, listen_server, NULL);
+    assert(pth_listen == 0);
 
     irc();
 
