@@ -8,7 +8,9 @@
 #include <sys/ipc.h>
 #include <assert.h>
 #include <pthread.h>
-#include <sys/sem.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include <arpa/inet.h>
 
 #define LEN_SYSTEM 68
 #define ENTER 10
@@ -19,9 +21,9 @@
 #define USER_N 2
 
 WINDOW *chat, *canal, *input, *user, *sub_chat, *sub_canal, *sub_user, *sub_input, *sub_info;
-int count_user, count_canal, count_row, count_col, exit_client, offset_all;
+int count_user, count_canal, count_row, count_col, exit_client, offset_all, port, sock, new_sock;
 char *canal_name, *user_name;
-char now_canal[68];
+char now_canal[68], my_name[68], ip[32];
 
 struct queue_sms {
 	char buf[512];
@@ -34,7 +36,7 @@ struct queue_sms {
 
 struct queue_sms *list = NULL, *sever = NULL;
 
-struct queue_sms *new(char *buf)
+struct queue_sms *new(char *buf, char *canal)
 {
 	struct queue_sms *p = NULL;
 	p = (struct queue_sms *)malloc(sizeof(struct queue_sms));
@@ -45,16 +47,16 @@ struct queue_sms *new(char *buf)
 	memset(p->user_dest, 0, 68);
 
 	strcpy(p->buf, buf);
-	strcpy(p->window, now_canal);
+	strcpy(p->window, canal);
 	p->next = NULL;
 
 	return p;
 }
 
-struct queue_sms *add(struct queue_sms *list_t, char buf[512])
+struct queue_sms *add(struct queue_sms *list_t, char buf[512], char *canal)
 {
 	struct queue_sms *newnode = NULL, *p = NULL;
-	newnode = new(buf);
+	newnode = new(buf, canal);
 	if(newnode != NULL) {
 		if(list_t == NULL) {
 		    list_t = newnode;
@@ -124,7 +126,7 @@ void init()
     cbreak();
     noecho();
 
-    strcpy(now_canal, "1");
+    strcpy(now_canal, "server");
     offset_all = 0;
 
     keypad(stdscr, TRUE);
@@ -133,7 +135,7 @@ void init()
 
 void print_information()
 {
-	mvwprintw(sub_info, 0, 0, "Hello, please write: USER name 0 * :real_name !!! Next sms: NICK my_nickname !!! exit sms: bay");
+	mvwprintw(sub_info, 0, 0, "Hello, you on chat, your name %s!!! exit sms: bay", my_name);
 	refresh();
 	wrefresh(sub_info);
 }
@@ -192,6 +194,14 @@ void read_name()
     char num_user[68];
     int sizeof_buf;
     FILE *fd;
+
+    fd = fopen("name_server", "w+");
+    assert(fd != NULL);
+
+    fwrite("1\n", strlen("1\n"), 1, fd);
+    fwrite(my_name, strlen(my_name), 1, fd);
+    
+    fclose(fd);
 
     fd = fopen("name_server", "r");
     assert(fd != NULL);
@@ -362,8 +372,7 @@ int key(char *buf_input)
 	    }
 	}
     }
-    if(key == ENTER && ((flag == CANAL_N) || (strcmp(buf_input, "join") == 0))) {
-
+    if((key == ENTER) && (flag == CANAL_N)) {
 	memset(buf_input, 0, 512);
 	wclear(sub_input);
 	wclear(sub_chat);
@@ -407,7 +416,9 @@ void irc()
 	    exit_client = 0;
 	    continue;
 	}
-	list = add(list, buf_input);
+	list = add(list, buf_input, now_canal);
+	
+
 	memset(buf_input, 0, 512);
 	refresh();
 	wrefresh(sub_chat);
@@ -448,7 +459,7 @@ void *get_message(void *arg)
 			wdeleteln(sub_chat);
 			wmove(sub_chat, offset_all, 0);
 		}
-		sever = add(sever, p->buf);
+		sever = add(sever, p->buf, now_canal);
 		memset(p->buf, 0, 512);
 		list = del(list, p);
 		usleep(10);
@@ -462,21 +473,75 @@ void *get_message(void *arg)
     return NULL;
 }
 
-int main()
+void connect_sock(int argc, char **argv)
+{
+    struct sockaddr_in cl;
+    
+    if(argc < 4) exit(0);
+    strcpy(ip, argv[1]);
+    port = atoi(argv[2]);
+    strcpy(my_name, argv[3]);
+    printf("%s %d %s\n", ip, port, my_name);
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if(sock <= 0) {
+	printf("error socket\n");
+	exit(0);
+    }
+
+    bzero(&cl, sizeof(cl));
+
+    cl.sin_family = AF_INET;
+    cl.sin_addr.s_addr = inet_addr(ip);
+    cl.sin_port = htons(port);
+
+    if((connect(sock, (struct sockaddr *)&cl, sizeof(cl))) < 0) {
+	printf("error connect\n");
+	exit(0);
+    }
+
+    //sms. connect - yes
+//	send(sock, &mes, sizeof(mes), 0);
+//	mlen = recv(sock, &mes, sizeof(mes), 0);
+}
+
+void send_start_sms()
+{
+    char start_sms[512];
+    //NICK my_nick
+    strcpy(start_sms, "NICK ");
+    strcat(start_sms, my_name);
+    strcat(start_sms, "\r\n");
+    send(sock, start_sms, strlen(start_sms), 0);
+
+    //USER my_nick 0 * :sms
+    strcpy(start_sms, "USER ");
+    strcat(start_sms, my_name);
+    strcat(start_sms, " 0 * :1234");
+    strcat(start_sms, "\r\n");
+    send(sock, start_sms, strlen(start_sms), 0);
+}
+
+int main(int argc, char **argv)
 {
     pthread_t pth;
     int pth_get;
+    
+    connect_sock(argc, argv);
+    send_start_sms();
+
     init();
     print_information();
 
     read_name();
     read_canal();
-    
+
     pth_get = pthread_create(&pth, NULL, get_message, NULL);
     assert(pth_get == 0);
 
     irc();
 
+    close(sock);
     endwin();
     return 0;
 }
