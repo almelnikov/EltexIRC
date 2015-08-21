@@ -62,6 +62,7 @@ void *ClientHandler(void *arg)
   if (!registered.flags.fail) {
     printf("successfully registered user: %s\n", nick);
     registered.flags.connect = 1;
+    SendMsgToUser(&all_users, nick, ":192.168.1.1 001 :Welcome to the Internet Relay Network\r\n");
     while (registered.flags.connect) {
       if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
 				printf("disconnected...\n");
