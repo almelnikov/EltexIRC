@@ -164,7 +164,6 @@ int AddUserToChannel(struct IRCAllChannels *channels,
   pthread_mutex_lock(&channels->lock);
   pthread_mutex_lock(&allusers->lock);
   user_ptr = GetUserPtr(allusers, nick);
-  pthread_mutex_unlock(&allusers->lock);
 
   chan_ptr = GetChannelPtr(channels, channame);
   if (chan_ptr == NULL) {
@@ -187,12 +186,14 @@ int AddUserToChannel(struct IRCAllChannels *channels,
       *duser_ptr = user_ptr;
     }
   }
+  pthread_mutex_unlock(&allusers->lock);
   pthread_mutex_unlock(&channels->lock);
   return ret;
 }
 
-int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
-                          const char *nick) {
+int RemoveUserFromChannel(struct IRCAllChannels *channels, 
+                          struct IRCAllUsers *allusers,
+                          const char *channame, const char *nick) {
   int ret = 0;
   struct IRCChannel *chan_ptr;
   struct IRCUser **duser_ptr;
@@ -204,6 +205,7 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
     return IRC_USERERR_CHAN;
   }
   pthread_mutex_lock(&channels->lock);
+  pthread_mutex_lock(&allusers->lock);
   chan_ptr = GetChannelPtr(channels, channame);
   if (chan_ptr == NULL) {
     ret = IRC_USERERR_NOTFOUND;
@@ -219,6 +221,7 @@ int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
       }
     }
   }
+  pthread_mutex_unlock(&allusers->lock);
   pthread_mutex_unlock(&channels->lock);
 
   return ret;
@@ -269,7 +272,8 @@ struct NamesList GetChannelsList(struct IRCAllChannels *channels) {
   return list;
 }
 
-int GetUsersOnChannel(struct IRCAllChannels *channels, const char *channame,
+int GetUsersOnChannel(struct IRCAllChannels *channels,
+                      struct IRCAllUsers *allusers, const char *channame,
                       struct NamesList *users_list) {
   int ret;
   struct IRCChannel *chan_ptr;
@@ -288,6 +292,7 @@ int GetUsersOnChannel(struct IRCAllChannels *channels, const char *channame,
     return IRC_USERERR_CHAN;
   }
   pthread_mutex_lock(&channels->lock);
+  pthread_mutex_lock(&allusers->lock);
   chan_ptr = GetChannelPtr(channels, channame);
   if (chan_ptr == NULL) {
     ret = IRC_USERERR_NOTFOUND;
@@ -311,6 +316,7 @@ int GetUsersOnChannel(struct IRCAllChannels *channels, const char *channame,
       }
     }
   }
+  pthread_mutex_unlock(&allusers->lock);
   pthread_mutex_unlock(&channels->lock);
   if (list.cnt != 0) {
     list.names = (char**)malloc(sizeof(char*) * list.cnt);

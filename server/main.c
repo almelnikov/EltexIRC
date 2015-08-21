@@ -106,7 +106,7 @@ void *ClientHandler(void *arg)
 
         case IRCCMD_PART:
           for (index = 0; index < msg.cnt; index++) {
-            RemoveUserFromChannel(&all_chan, msg.params[index], nick);
+            RemoveUserFromChannel(&all_chan, &all_users, msg.params[index], nick);
             chan_list.head = DeleteThrNode(&chan_list, msg.params[index]);
           }
           break;
@@ -128,7 +128,7 @@ void *ClientHandler(void *arg)
   printf("current %d chan\n", chan_list.size);
   if (chan_list.size > 0) {
     for (ptr = chan_list.head; ptr != NULL; ptr = ptr->next)
-      RemoveUserFromChannel(&all_chan, ptr->chan, nick);
+      RemoveUserFromChannel(&all_chan, &all_users, ptr->chan, nick);
     FreeThreadList(&chan_list);
   }
 

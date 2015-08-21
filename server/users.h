@@ -56,12 +56,16 @@ int AddUser(struct IRCAllUsers *allusers, const char *nick,
 int AddUserToChannel(struct IRCAllChannels *channels,
                      struct IRCAllUsers *allusers,
                      const char *channame, const char *nick);
-int RemoveUserFromChannel(struct IRCAllChannels *channels, const char *channame,
-                          const char *nick);
+int RemoveUserFromChannel(struct IRCAllChannels *channels,
+                          struct IRCAllUsers *allusers,
+                          const char *channame, const char *nick);
 struct IRCChannel *GetChannelPtr(struct IRCAllChannels *channels,
                                  const char *channame);
 struct IRCUser **FindUserOnChan(struct IRCChannel *chan, const char *nick);
 struct NamesList GetChannelsList(struct IRCAllChannels *channels);
+int GetUsersOnChannel(struct IRCAllChannels *channels,
+                      struct IRCAllUsers *allusers, const char *channame,
+                      struct NamesList *users_list);
 void FreeNamesList(struct NamesList *list);
 
 #endif  // ELTEXIRC_SERVER_USERS_H_
