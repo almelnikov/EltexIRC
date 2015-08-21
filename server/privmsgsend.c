@@ -20,7 +20,8 @@ int SendMsgToUser(struct IRCAllUsers *allusers, const char *nick,
   return ret;
 }
 
-int SendMsgToChannel(struct IRCAllChannels *channels, const char *channame,
+int SendMsgToChannel(struct IRCAllChannels *channels,
+                     struct IRCAllUsers *allusers, const char *channame,
                      const char *nick, const char *msg) {
   int ret = 0;
   int i;
@@ -29,6 +30,7 @@ int SendMsgToChannel(struct IRCAllChannels *channels, const char *channame,
   char *str;
 
   pthread_mutex_lock(&channels->lock);
+  pthread_mutex_lock(&allusers->lock);
   chan_ptr = GetChannelPtr(channels, channame);
   if (chan_ptr == NULL) {
     ret = -1;
@@ -45,6 +47,7 @@ int SendMsgToChannel(struct IRCAllChannels *channels, const char *channame,
       }
     }
   }
+  pthread_mutex_unlock(&allusers->lock);
   pthread_mutex_unlock(&channels->lock);
   return ret;
 }

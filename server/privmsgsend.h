@@ -6,7 +6,8 @@
 
 int SendMsgToUser(struct IRCAllUsers *clients, const char *nick,
                   const char *msg);
-int SendMsgToChannel(struct IRCAllChannels *channels, const char *channame,
+int SendMsgToChannel(struct IRCAllChannels *channels,
+                     struct IRCAllUsers *clients, const char *channame,
                      const char *nick, const char *msg);
 
 #endif  // ELTEXIRC_SERVER_PRIVMSGSEND_H_

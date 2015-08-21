@@ -89,7 +89,7 @@ void *ClientHandler(void *arg)
             chan_list.head = ThrListAddFront(&chan_list, msg.params[0]);
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               SendMsgToUser(&all_users, nick, send_msg);
-              SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg);
+              SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg);
             }
             printf("TO SEND: %s\n", send_msg);
           } else {
@@ -103,7 +103,7 @@ void *ClientHandler(void *arg)
               printf("send %s \nto %s len %d\n", send_msg, msg.params[0],
                                                 (int)strlen(send_msg));
               if (msg.params[0][0] == '#') {
-                if (SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg) < 0)
+                if (SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg) < 0)
                   perror("SendMsgToChannel failed");
               } else {
                 SendMsgToUser(&all_users, msg.params[0], send_msg);
@@ -120,7 +120,6 @@ void *ClientHandler(void *arg)
               printf("send %s \nto %s\n", send_msg, msg.params[0]);
               SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg);
             }
-          }
           break;
           
         case IRCCMD_NICK:
@@ -142,7 +141,7 @@ void *ClientHandler(void *arg)
   printf("current %d chan\n", chan_list.size);
   if (chan_list.size > 0) {
     for (ptr = chan_list.head; ptr != NULL; ptr = ptr->next)
-      RemoveUserFromChannel(&all_chan, ptr->chan, nick);
+      RemoveUserFromChannel(&all_chan, &all_users, ptr->chan, nick);
     FreeThreadList(&chan_list);
   }
 
