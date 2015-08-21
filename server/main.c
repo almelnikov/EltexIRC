@@ -1,6 +1,7 @@
 #include "connect.h"
 #include "msgparse.h"
 #include "users.h"
+#include "users_list.h"
 
 void *ClientHandler(void *arg)
 {
@@ -92,7 +93,8 @@ void *ClientHandler(void *arg)
               SendMsgToUser(&all_users, nick, send_msg);
               SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick,
                               send_msg);
-            // FormChanList(&all_chan, &all_users, nick);
+              SendChannelList(client->sockfd, &all_chan, &all_users, msg.params[0],
+                              "anonimus", nick);
             }
             printf("TO SEND: %s\n", send_msg);
           } else {
