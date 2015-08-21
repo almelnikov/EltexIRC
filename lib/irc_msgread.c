@@ -26,4 +26,5 @@ int IRCMsgRead(int sockfd, char *raw_msg) {
       total += bytes;
     }
   }
+  return 0;
 }

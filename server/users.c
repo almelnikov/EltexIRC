@@ -275,7 +275,7 @@ struct NamesList GetChannelsList(struct IRCAllChannels *channels) {
 int GetUsersOnChannel(struct IRCAllChannels *channels,
                       struct IRCAllUsers *allusers, const char *channame,
                       struct NamesList *users_list) {
-  int ret;
+  int ret = 0;
   struct IRCChannel *chan_ptr;
   int i;
   char *str;
@@ -307,6 +307,7 @@ int GetUsersOnChannel(struct IRCAllChannels *channels,
           names = (char*)realloc(names, allocated);
           if (names == NULL) {
             list.cnt = 0;
+            ret = IRC_USERERR_CANTADD;
             break;
           } else {
             strcpy(names + shift, str);
@@ -322,6 +323,7 @@ int GetUsersOnChannel(struct IRCAllChannels *channels,
     list.names = (char**)malloc(sizeof(char*) * list.cnt);
     if (list.names == NULL) {
       list.cnt = 0;
+      ret = IRC_USERERR_CANTADD;
     } else {
       list.names[0] = names;
       for (i = 1; i < list.cnt; i++) {

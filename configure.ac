@@ -17,4 +17,4 @@ AC_PROG_RANLIB
 
 # Checks for library functions.
 
-AC_OUTPUT([Makefile] [server/Makefile] [lib/Makefile])
+AC_OUTPUT([Makefile] [server/Makefile] [lib/Makefile] [client/Makefile])

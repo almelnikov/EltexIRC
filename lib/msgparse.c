@@ -158,3 +158,23 @@ void FreeParsedMsg(struct ParsedMsg *msg) {
   msg->params = NULL;
   msg->optional = NULL;
 }
+
+char *GetNickFromHost(struct ParsedMsg *msg) {
+  char *ret = NULL;
+  char *nick_begin;
+  char *point_pos;
+
+  if (msg->optional != NULL) {
+    nick_begin = msg->optional + 1;
+    point_pos = strchr(nick_begin, '!');
+    if (point_pos != NULL) {
+      ret = malloc(point_pos - nick_begin + 1);
+      if (ret != NULL) {
+        strncpy(ret, nick_begin, point_pos - nick_begin);
+      } else {
+        perror("malloc");
+      }
+    }
+  }
+  return ret;
+}
