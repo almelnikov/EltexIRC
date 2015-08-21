@@ -15,11 +15,12 @@ void *ClientHandler(void *arg)
     .names = NULL
   };
   struct ThreadChanNode *ptr;
+  union RegistrationFlags registered;
   char raw_msg[IRC_MSG_MAX_LENGTH];
   char send_msg[IRC_MSG_MAX_LENGTH];
   char nick[IRC_NICK_BUF_SIZE];
   ssize_t bytes = 0;
-  int ret, index;
+  int ret, index, connect = 1;
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -42,9 +43,14 @@ void *ClientHandler(void *arg)
       registered.flags.user = 1;
     } else if (msg.cmd == IRCCMD_NICK) {
       if (registered.flags.nick == 0) {
+        if (msg.cnt == 0) {
+          FreeParsedMsg(&msg);
+          continue;
+        }
         ret = AddUser(&all_users, msg.params[0], client);
         if (ret == IRC_USERERR_EXIST || ret == IRC_USERERR_NICK) {
           perror("IRC_USERERR");
+          FreeParsedMsg(&msg);
           continue;
         } else if (ret == IRC_USERERR_CANTADD) {
           registered.flags.fail = 1;
@@ -76,6 +82,8 @@ void *ClientHandler(void *arg)
           break;
 
         case IRCCMD_JOIN:
+          if (msg.cnt == 0) 
+            break;
           if (AddUserToChannel(&all_chan, &all_users, msg.params[0], nick) == 0) {
             printf("add to channel %s\n", msg.params[0]);
             chan_list.head = ThrListAddFront(&chan_list, msg.params[0]);
@@ -105,13 +113,19 @@ void *ClientHandler(void *arg)
           break;
 
         case IRCCMD_PART:
-          for (index = 0; index < msg.cnt; index++) {
-            RemoveUserFromChannel(&all_chan, msg.params[index], nick);
-            chan_list.head = DeleteThrNode(&chan_list, msg.params[index]);
+          if (msg.cnt != 0) {
+            RemoveUserFromChannel(&all_chan, msg.params[0], nick);
+            chan_list.head = DeleteThrNode(&chan_list, msg.params[0]);
+            if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
+              printf("send %s \nto %s\n", send_msg, msg.params[0]);
+              SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg);
+            }
           }
           break;
           
         case IRCCMD_NICK:
+          if (msg.cnt == 0)
+            break;
           printf("change nick: %s -> %s\n", nick, msg.params[0]);
           if (RenameUser(&all_users, nick, msg.params[0]) == 0) { 
             ret = strlen(msg.params[0]);
@@ -136,7 +150,7 @@ void *ClientHandler(void *arg)
   pthread_mutex_destroy(&client->send_lock);
   DelUser(&all_users, (const char *)&nick);
   free(client);
-  printf("close...\n");
+  printf("close... %s\n", nick);
   pthread_exit(NULL);
 }
 

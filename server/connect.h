@@ -41,7 +41,6 @@ struct ThreadChanList
   int size;
 };
 
-union RegistrationFlags registered;
 struct IRCAllUsers all_users;
 struct IRCAllChannels all_chan;
 
