@@ -49,6 +49,10 @@ struct ThreadChanNode *ThrListAddFront(struct ThreadChanList *list,
                                 char *chan);
 struct ThreadChanNode *DeleteThrNode(struct ThreadChanList *list,
                                   char *chan);
+int FormSendMsg(char *output, char *msg, const char *nick);
+
+int FormChanList(struct IRCAllChannels *channels, struct IRCAllUsers *users,
+                const char *nick);
 void FreeThreadList(struct ThreadChanList *list);
 
 #endif // ELTEXIRC_SERVER_CONNECT_H

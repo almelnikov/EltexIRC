@@ -84,12 +84,15 @@ void *ClientHandler(void *arg)
         case IRCCMD_JOIN:
           if (msg.cnt == 0) 
             break;
-          if (AddUserToChannel(&all_chan, &all_users, msg.params[0], nick) == 0) {
+          if (AddUserToChannel(&all_chan, &all_users, msg.params[0], 
+                              nick) == 0) {
             printf("add to channel %s\n", msg.params[0]);
             chan_list.head = ThrListAddFront(&chan_list, msg.params[0]);
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               SendMsgToUser(&all_users, nick, send_msg);
-              SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg);
+              SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick,
+                              send_msg);
+            // FormChanList(&all_chan, &all_users, nick);
             }
             printf("TO SEND: %s\n", send_msg);
           } else {
@@ -103,7 +106,8 @@ void *ClientHandler(void *arg)
               printf("send %s \nto %s len %d\n", send_msg, msg.params[0],
                                                 (int)strlen(send_msg));
               if (msg.params[0][0] == '#') {
-                if (SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg) < 0)
+                if (SendMsgToChannel(&all_chan, &all_users, msg.params[0], 
+                                    nick, send_msg) < 0)
                   perror("SendMsgToChannel failed");
               } else {
                 SendMsgToUser(&all_users, msg.params[0], send_msg);
@@ -118,11 +122,11 @@ void *ClientHandler(void *arg)
             chan_list.head = DeleteThrNode(&chan_list, msg.params[0]);
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               printf("send %s \nto %s\n", send_msg, msg.params[0]);
-              SendMsgToChannel(&all_chan, msg.params[0], nick, send_msg);
+              SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg);
             }
           }
-          break;
-          
+            break;
+         
         case IRCCMD_NICK:
           if (msg.cnt == 0)
             break;
@@ -134,6 +138,17 @@ void *ClientHandler(void *arg)
           } else {
             perror("RenameUser");
           }
+          break;
+          
+        case IRCCMD_PING:
+          printf("PING : %d\n", msg.cnt);
+          if (msg.cnt == 1) {
+            FormPongMsg(&all_users, raw_msg, nick);
+          }
+          break;
+          
+        case IRCCMD_LIST:
+          FormChanList(&all_chan, &all_users, nick);
           break;
       }
       FreeParsedMsg(&msg);
