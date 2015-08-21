@@ -15,7 +15,10 @@ enum IRCCommands {
   IRCCMD_JOIN,
   IRCCMD_PART,
   IRCCMD_QUIT,
-  IRCCMD_LIST
+  IRCCMD_LIST,
+  IRCCMD_PING,
+  IRCCMD_PONG,
+  IRCCMD_NUMERIC
 };
 
 struct ParsedMsg {
@@ -23,6 +26,7 @@ struct ParsedMsg {
   enum IRCCommands cmd;
   int cnt;
   char **params;
+  int numeric;
 };
 
 int FormParsedMsg(const char *str, struct ParsedMsg *msg);

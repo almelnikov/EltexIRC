@@ -1,5 +1,20 @@
 #include "msgparse.h"
 
+static int IsErrCode(const char *str) {
+  int i;
+
+  if (strlen(str) != 3) {
+    return 0;
+  } else {
+    for (i = 0; i < 3; i++) {
+      if (!(str[i] >= '0' && str[i] <= '9')) {
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
 enum IRCCommands GetIRCCommand(const char *str) {
   char *command;
   int length, i;
@@ -29,6 +44,12 @@ enum IRCCommands GetIRCCommand(const char *str) {
       ret = IRCCMD_QUIT;
     } else if (strcmp(command, "LIST") == 0) {
       ret = IRCCMD_LIST;
+    } else if (strcmp(command, "PING") == 0) {
+      ret = IRCCMD_PING;
+    } else if (strcmp(command, "PONG") == 0) {
+      ret = IRCCMD_PONG;
+    } else if (IsErrCode(command)) {
+      ret = IRCCMD_NUMERIC;
     }
 
     free(command);
@@ -58,6 +79,7 @@ int FormParsedMsg(const char *str, struct ParsedMsg *msg) {
   msg->cnt = 0;
   msg->cmd = IRCCMD_UNKNOWN;
   msg->params = NULL;
+  msg->numeric = -1;
   // Убрать пробелы в начале
   while (*ptr == ' ') ptr++;
   // Начало длинного параметра
@@ -80,6 +102,9 @@ int FormParsedMsg(const char *str, struct ParsedMsg *msg) {
     } else {  // Нет опционального параметра
       if (readed_tokens == 0) { // Комманда
         msg->cmd = GetIRCCommand(tok_return);
+        if (msg->cmd == IRCCMD_NUMERIC) {
+          sscanf(tok_return, "%d", &msg->numeric);
+        }
         readed_tokens++;
       } else { // Параметр
         length = strlen(tok_return) + 1;
