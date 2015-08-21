@@ -11,6 +11,8 @@
 #include<netinet/in.h>
 #include<sys/socket.h>
 #include <arpa/inet.h>
+#include "irc_msgread.h"
+#include "msgparse.h"
 
 #define LEN_SYSTEM 68
 #define ENTER 10
@@ -364,11 +366,13 @@ int key(char *buf_input)
 		wrefresh(sub_input);
 	    }
 	    default: {
-		buf_input[index_buf_input++] = key;
-		wclear(sub_input);
-		wprintw(sub_input, "%s", buf_input);
-		refresh();
-		wrefresh(sub_input);
+		if(index_buf_input <= 400) {
+		    buf_input[index_buf_input++] = key;
+		    wclear(sub_input);
+		    wprintw(sub_input, "%s", buf_input);
+		    refresh();
+		    wrefresh(sub_input);
+		}
 	    }
 	}
     }
@@ -402,6 +406,31 @@ int key(char *buf_input)
     return 1;
 }
 
+void IrcMsgSend_priv(char *buf_input)
+{
+    char buf_send_serv[512];
+    memset(buf_send_serv, 0, 512);
+
+    strcpy(buf_send_server, "PRIVMSG #");
+    strcat(buf_send_server, now_canal);
+    strcat(buf_send_server, " : ");
+    strcat(buf_send_server, buf_input);
+    strcat(buf_send_server, "\r\n");
+
+    send(sock, buf_send_server, strlen(buf_send_server), 0);
+}
+
+void IrcMsgSend_com(char *buf_input)
+{
+    char buf_send_serv[512];
+    memset(buf_send_serv, 0, 512);
+    
+    buf_send_serv = (buf_input + 1);
+    strcat(buf_send_server, "\r\n");
+
+    send(sock, buf_send_server, strlen(buf_send_server), 0);
+}
+
 void irc()
 {
     char buf_input[512];
@@ -416,9 +445,14 @@ void irc()
 	    exit_client = 0;
 	    continue;
 	}
-	list = add(list, buf_input, now_canal);
-	
-
+	if(buf_input[0] != '/') {
+	    list = add(list, buf_input, now_canal);
+	    IrcMsgSend_priv(buf_input);
+	}
+	else {
+	    list = add(list, buf_input + 1, "server");
+	    IrcMsgSend_com(buf_input);
+	}
 	memset(buf_input, 0, 512);
 	refresh();
 	wrefresh(sub_chat);
