@@ -189,15 +189,15 @@ void write_canal()
 
 void read_name() 
 {
-    char num_user;
+    char num_user[68];
     int sizeof_buf;
     FILE *fd;
 
     fd = fopen("name_server", "r");
     assert(fd != NULL);
 
-    fgets(&num_user, LEN_SYSTEM, fd);
-    count_user = atoi(&num_user);
+    fgets(num_user, LEN_SYSTEM, fd);
+    count_user = atoi(num_user);
 
     sizeof_buf = sizeof(char) * 68 * count_user;
     user_name = (char *)malloc(sizeof_buf);
@@ -212,15 +212,15 @@ void read_name()
 
 void read_canal() 
 {
-    char num_canal;
+    char num_canal[68];
     int sizeof_buf;
     FILE *fd;
 
     fd = fopen("name_canal", "r");
     assert(fd != NULL);
 
-    fgets(&num_canal, LEN_SYSTEM, fd);
-    count_canal = atoi(&num_canal);
+    fgets(num_canal, LEN_SYSTEM, fd);
+    count_canal = atoi(num_canal);
 
     sizeof_buf = sizeof(char) * 68 * count_canal;
     canal_name = (char *)malloc(sizeof_buf);
@@ -477,7 +477,6 @@ int main()
 
     irc();
 
-    getch();
     endwin();
     return 0;
 }
