@@ -19,14 +19,14 @@
 
 union RegistrationFlags
 {
-	struct RegFlags
-	{
-		unsigned user:1;
-		unsigned nick:1;
+  struct RegFlags
+  {
+    unsigned user:1;
+    unsigned nick:1;
     unsigned connect:1;
-		unsigned fail:1;
+    unsigned fail:1;
   } flags;
-	unsigned clear;
+  unsigned clear;
 };
 
 struct ThreadChanNode

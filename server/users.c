@@ -20,7 +20,7 @@ int RenameUser(struct IRCAllUsers *allusers, const char *oldnick,
   struct IRCUser *ptr;
   int ret = 0;
   int duplication_flag = 0;
-  
+
   if (!IsValidNick(oldnick) || !IsValidNick(newnick)) {
     return IRC_USERERR_NICK;
   }

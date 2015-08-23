@@ -72,11 +72,11 @@ void *ClientHandler(void *arg)
     SendConnectMsg(&all_users, "anonimus", nick);
     while (registered.flags.connect) {
       if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
-				printf("disconnected...\n");
-				break;
-			}
+        printf("disconnected...\n");
+        break;
+      }
       printf("raw: %s len %d\n", raw_msg, (int)strlen(raw_msg));
-			FormParsedMsg(raw_msg, &msg);
+      FormParsedMsg(raw_msg, &msg);
 
       switch (msg.cmd) {
         case IRCCMD_QUIT:
