@@ -69,6 +69,7 @@ void *ClientHandler(void *arg)
   if (!registered.flags.fail) {
     printf("successfully registered user: %s\n", nick);
     registered.flags.connect = 1;
+    SendConnectMsg(&all_users, "anonimus", nick);
     while (registered.flags.connect) {
       if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
 				printf("disconnected...\n");
@@ -85,7 +86,7 @@ void *ClientHandler(void *arg)
         case IRCCMD_JOIN:
           if (msg.cnt == 0) 
             break;
-          if (AddUserToChannel(&all_chan, &all_users, msg.params[0], 
+          if (AddUserToChannel(&all_chan, &all_users, msg.params[0],
                               nick) == 0) {
             printf("add to channel %s\n", msg.params[0]);
             chan_list.head = ThrListAddFront(&chan_list, msg.params[0]);
