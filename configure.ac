@@ -7,11 +7,14 @@ AC_CONFIG_SRCDIR([server/main.c])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_INSTALL
 AC_PROG_RANLIB
 
 # Checks for libraries.
 
 # Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([pthread.h curses.h sys/socket.h netinet/in.h arpa/inet.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
