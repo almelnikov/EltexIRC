@@ -1,4 +1,4 @@
-#include "users_list.h"
+#include "server_respond.h"
 
 int SendConnectMsg(struct IRCAllUsers *allusers, const char *host,
                    const char *nick) {
