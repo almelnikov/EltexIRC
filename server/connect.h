@@ -51,5 +51,6 @@ struct ThreadChanNode *DeleteThrNode(struct ThreadChanList *list,
                                   char *chan);
 int FormSendMsg(char *output, char *msg, const char *nick);
 void FreeThreadList(struct ThreadChanList *list);
+int ErrorHandler(int sockfd, char *raw_msg, int numeric);
 
 #endif // ELTEXIRC_SERVER_CONNECT_H
