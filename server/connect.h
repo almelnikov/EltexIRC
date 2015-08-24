@@ -19,14 +19,14 @@
 
 union RegistrationFlags
 {
-	struct RegFlags
-	{
-		unsigned user:1;
-		unsigned nick:1;
+  struct RegFlags
+  {
+    unsigned user:1;
+    unsigned nick:1;
     unsigned connect:1;
-		unsigned fail:1;
+    unsigned fail:1;
   } flags;
-	unsigned clear;
+  unsigned clear;
 };
 
 struct ThreadChanNode
@@ -50,9 +50,6 @@ struct ThreadChanNode *ThrListAddFront(struct ThreadChanList *list,
 struct ThreadChanNode *DeleteThrNode(struct ThreadChanList *list,
                                   char *chan);
 int FormSendMsg(char *output, char *msg, const char *nick);
-
-int FormChanList(struct IRCAllChannels *channels, struct IRCAllUsers *users,
-                const char *nick);
 void FreeThreadList(struct ThreadChanList *list);
 
 #endif // ELTEXIRC_SERVER_CONNECT_H

@@ -1,6 +1,7 @@
 #ifndef ELTEXIRC_SERVER_PRIVMSGSEND_H_
 #define ELTEXIRC_SERVER_PRIVMSGSEND_H_
 
+#include <unistd.h>
 #include "users.h"
 #include "thread_info.h"
 
