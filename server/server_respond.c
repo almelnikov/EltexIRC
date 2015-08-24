@@ -9,11 +9,12 @@ int SendConnectMsg(struct IRCAllUsers *allusers, const char *host,
 }
 
 int SendAllChannelsList(int sock, struct IRCAllChannels *channels,
-                        const char *host, const char *nick) {
+                        struct IRCAllUsers *allusers, const char *host,
+                        const char *nick) {
 
-  struct NamesList list;
+  struct NamesList list, chan_list;
   char buf[IRC_MSG_MAX_LENGTH + 1];
-  int len;
+  int len, err;
   int ret = 0;
   int i;
   int users_cnt;
@@ -24,7 +25,12 @@ int SendAllChannelsList(int sock, struct IRCAllChannels *channels,
   }
   i = 0;
   for (i = 0; i < list.cnt; i++) {
-    users_cnt = 1;  // tmp
+    err = GetUsersOnChannel(channels, allusers, list.names[i], &chan_list);
+    if (err != 0) {
+      FreeNamesList(&list);
+      return IRCERR_SCL_LIST;
+    }
+    users_cnt = chan_list.cnt;  // tmp
     sprintf(buf, ":%s 322 %s %s %d : \r\n", host, nick, list.names[i], users_cnt);
     len = strlen(buf);
     if (write(sock, buf, len) != len) {

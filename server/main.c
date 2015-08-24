@@ -125,7 +125,9 @@ void *ClientHandler(void *arg)
             chan_list.head = DeleteThrNode(&chan_list, msg.params[0]);
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               printf("send %s \nto %s\n", send_msg, msg.params[0]);
+              pthread_mutex_lock(&client->send_lock);
               SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg);
+              pthread_mutex_unlock(&client->send_lock);
             }
           }
             break;
@@ -134,7 +136,7 @@ void *ClientHandler(void *arg)
           if (msg.cnt == 0)
             break;
           printf("change nick: %s -> %s\n", nick, msg.params[0]);
-          if (RenameUser(&all_users, nick, msg.params[0]) == 0) { 
+          if (RenameUser(&all_users, nick, msg.params[0]) == 0) {
             ret = strlen(msg.params[0]);
             strncpy(nick, msg.params[0], ret);
             nick[ret] = '\0';
@@ -151,7 +153,11 @@ void *ClientHandler(void *arg)
           break;
           
         case IRCCMD_LIST:
-          FormChanList(&all_chan, &all_users, nick);
+          //FormChanList(&all_chan, &all_users, nick);
+          pthread_mutex_lock(&client->send_lock);
+          SendAllChannelsList(client->sockfd, &all_chan, &all_users,
+                              "anonimus", nick);
+          pthread_mutex_unlock(&client->send_lock);
           break;
       }
       FreeParsedMsg(&msg);
