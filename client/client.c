@@ -125,9 +125,16 @@ void add_window()
 
 void init()
 {
+    int sizeof_buf;
     initscr();
     cbreak();
     noecho();
+
+    sizeof_buf = sizeof(char) * 68 * (count_row*2);
+
+    user_name = (char *)malloc(sizeof_buf);
+    canal_name = (char *)malloc(sizeof_buf);
+
 
     strcpy(now_canal, "#server");
     offset_all = 0;
@@ -214,7 +221,6 @@ void read_name()
     count_user = atoi(num_user);
 
     sizeof_buf = sizeof(char) * 68 * count_user;
-    user_name = (char *)malloc(sizeof_buf);
     if(user_name == NULL) close_win();
 
     while((fread(user_name, sizeof_buf, 1, fd)) != 0);
@@ -450,7 +456,8 @@ void IrcMsgSend_command(char *buf_input)
     char buf_send_server[512];
     memset(buf_send_server, 0, 512);
     
-    strcpy(buf_send_server, (buf_input + 1));
+    if(buf_input != NULL)
+	strcpy(buf_send_server, (buf_input + 1));
     strcat(buf_send_server, "\r\n");
 
     send(sock, buf_send_server, strlen(buf_send_server), 0);
@@ -493,7 +500,7 @@ void irc()
     memset(buf_input, 0, 512);
     while(exit_client != 0) {
 	err = key(buf_input);
-	if(err == CANAL_N || (strlen(buf_input) == 0)) continue;
+	if((err == CANAL_N || (strlen(buf_input) == 0))) continue;
 	if(strcmp(buf_input, "EXIT") == 0) {
 	    exit_client = 0;
 	    continue;
@@ -528,7 +535,7 @@ int ParsedStructServer(struct ParsedMsg *message)
 	case IRCCMD_PRIVMSG: {
 	    if(message->cnt < 2) return -1;
 	    if(message->params[0][0] == '#') {
-		list = add(list, message->params[0], message->params[1]);
+		list = add(list, message->params[1], message->params[0]);
 	    }
 	    else {
 		mvwprintw(sub_chat, 10, 0, "buf %s !!!\n", message->params[1]);
@@ -541,8 +548,16 @@ int ParsedStructServer(struct ParsedMsg *message)
 	}
 	case IRCCMD_JOIN: {
 	    if(message->cnt < 1) return -1;
-	    strcat(canal_name, "\n");
-	    strcat(canal_name, message->params[0]);
+	    mvwprintw(sub_chat, 12, 0, "%s", message->params[0]/*, message->params[1]*/);
+	    refresh();
+	    wrefresh(sub_canal);
+	    if(canal_name != NULL) {
+		strcat(canal_name, "\n");
+		strcat(canal_name, message->params[0]);
+	    }
+	    else {
+		strcpy(canal_name, message->params[0]);
+	    }
 	    count_canal++;
 	    write_canal();
 	    wmove(sub_input, 0, 0);
@@ -551,7 +566,11 @@ int ParsedStructServer(struct ParsedMsg *message)
 	    break;
 	}
 	default: {
-	    list = add(list, message->params[0], "#server");
+	    if(message->cnt == 0) return -1;
+	    mvwprintw(sub_chat, 12, 0, "0 %s %s", message->params[0], message->params[1]);
+	    refresh();
+	    wrefresh(sub_chat);
+//	    list = add(list, message->params[0], "#server");
 	    break;
 	}
 	break;
@@ -592,17 +611,9 @@ void *get_message(void *arg)
     struct queue_sms *p = NULL, *prev = NULL;
     int offset_dev = 0, sem, pth_listen;
     pthread_t lis_server;
-//    key_t key_sem;
-    
-//    key_sem = ftok("client.c", 'A');
-//    sem = semget(key_sem, 3, 0666 | IPC_CREAT);
-
-
 
     while(exit_client != 0) {
 	for(p = list; p != NULL; p = p->next) {
-
-//	    semop(sem, lock, 2);
 	    if(strcmp(p->window, now_canal) == 0) {
 		usleep(10);
 		mvwprintw(sub_chat, 0 + offset_all, 0, "%s:%s", p->window, p->buf);
@@ -691,6 +702,10 @@ void send_start_sms()
     strcat(start_sms, " 0 * :1234");
     strcat(start_sms, "\r\n");
     send(sock, start_sms, strlen(start_sms), 0);
+
+    //JOIN #server
+    strcpy(start_sms, "JOIN #server\r\n");
+    send(sock, start_sms, strlen(start_sms), 0);
 }
 
 int main(int argc, char **argv)
@@ -704,8 +719,8 @@ int main(int argc, char **argv)
     init();
     print_information();
 
-    read_name();
-    read_canal();
+//    read_name();
+//    read_canal();
 
     pth_get = pthread_create(&pth, NULL, get_message, NULL);
     assert(pth_get == 0);
