@@ -6,6 +6,12 @@
 #include <string.h>
 #include <ctype.h>
 
+#define ERR_NONICKNAMEGIVEN 431
+#define ERR_NICKNAMEINUSE 436
+#define ERR_ERRONEUSNICKNAME 433
+#define ERR_NEEDMOREPARAMS 461
+#define ERR_CHANNELISFULL 471
+
 enum IRCCommands {
   IRCCMD_UNKNOWN,
   IRCCMD_PASS,

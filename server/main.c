@@ -3,6 +3,29 @@
 #include "users.h"
 #include "users_list.h"
 
+int ErrorHandler(int sockfd, char *raw_msg, int numeric)
+{
+  char hostname[IRC_HOST_MAX_LENGTH];
+  char buf[IRC_MSG_MAX_LENGTH];
+  size_t len = 0, bytes = 0;
+  
+  memset(&hostname, 0, IRC_HOST_MAX_LENGTH);
+  memset(&buf, 0, IRC_MSG_MAX_LENGTH);
+  
+  gethostname(hostname, IRC_HOST_MAX_LENGTH - 1);
+  
+  snprintf(buf, IRC_MSG_MAX_LENGTH, ":%s %d : %s\r\n", hostname, numeric, raw_msg);
+  
+  printf("Error Msg: %s\n", buf);
+  len = strlen(buf);
+  
+  if ((bytes = write(sockfd, buf, len)) > 0)
+    return bytes;
+  else 
+    return -1;
+}
+    
+
 void *ClientHandler(void *arg)
 {
   struct Client *client = ((struct Client *)arg);
@@ -40,20 +63,38 @@ void *ClientHandler(void *arg)
     }
     printf("raw: %s len %d\n", raw_msg, (int)strlen(raw_msg));
     FormParsedMsg(raw_msg, &msg);
+    if (msg.cmd == IRCCMD_QUIT) {
+      registered.flags.fail = 1;
+      break;
+    }
     if (msg.cmd == IRCCMD_USER) {
       registered.flags.user = 1;
     } else if (msg.cmd == IRCCMD_NICK) {
       if (registered.flags.nick == 0) {
         if (msg.cnt == 0) {
+          ErrorHandler(client->sockfd, 
+                      "nickname parameter expected for a command and isn’t found",
+                       ERR_ERRONEUSNICKNAME);
+          FreeParsedMsg(&msg);
+          continue;
+        }
+        if (msg.params[0][0] == '#') {
+          ErrorHandler(client->sockfd, "USER NICK: #nick invalid", ERR_ERRONEUSNICKNAME);
           FreeParsedMsg(&msg);
           continue;
         }
         ret = AddUser(&all_users, msg.params[0], client);
-        if (ret == IRC_USERERR_EXIST || ret == IRC_USERERR_NICK) {
-          perror("IRC_USERERR");
+        if (ret == IRC_USERERR_EXIST) {
+          ErrorHandler(client->sockfd, "NICK already exist", ERR_NICKNAMEINUSE);
+          FreeParsedMsg(&msg);
+          continue;
+        } else if (ret == IRC_USERERR_NICK) {
+          ErrorHandler(client->sockfd, "INCORRECT NICK", ERR_ERRONEUSNICKNAME);
           FreeParsedMsg(&msg);
           continue;
         } else if (ret == IRC_USERERR_CANTADD) {
+          ErrorHandler(client->sockfd, "USER CANT ADD", IRC_USERERR_CANTADD);
+          FreeParsedMsg(&msg);
           registered.flags.fail = 1;
         } else {
           ret = strlen(msg.params[0]);
@@ -80,11 +121,20 @@ void *ClientHandler(void *arg)
       switch (msg.cmd) {
         case IRCCMD_QUIT:
           registered.flags.connect = 0;
+          if (chan_list.size > 0) {
+            if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
+              for (ptr = chan_list.head; ptr != NULL; ptr = ptr->next) 
+                SendMsgToChannel(&all_chan, &all_users, ptr->chan, nick,
+                              send_msg);
+            }
+          }
           break;
 
         case IRCCMD_JOIN:
-          if (msg.cnt == 0) 
+          if (msg.cnt == 0) {
+            ErrorHandler(client->sockfd, "JOIN :Not enough parameters", ERR_NEEDMOREPARAMS);
             break;
+          }
           if (AddUserToChannel(&all_chan, &all_users, msg.params[0], 
                               nick) == 0) {
             printf("add to channel %s\n", msg.params[0]);
@@ -94,11 +144,11 @@ void *ClientHandler(void *arg)
               SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick,
                               send_msg);
               SendChannelList(client->sockfd, &all_chan, &all_users, msg.params[0],
-                              "anonimus", nick);
+                              "anonimous", nick);
             }
             printf("TO SEND: %s\n", send_msg);
           } else {
-            perror("AddUserToChannel failed");
+            ErrorHandler(client->sockfd, "Cannot join channel", ERR_CHANNELISFULL);
           }
           break;
 
@@ -115,6 +165,9 @@ void *ClientHandler(void *arg)
                 SendMsgToUser(&all_users, msg.params[0], send_msg);
               }
             }
+          } else {
+            ErrorHandler(client->sockfd, "PRIVMSG: Not enough parameters", 
+                        ERR_NEEDMOREPARAMS);
           }
           break;
 
@@ -124,28 +177,47 @@ void *ClientHandler(void *arg)
             chan_list.head = DeleteThrNode(&chan_list, msg.params[0]);
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               printf("send %s \nto %s\n", send_msg, msg.params[0]);
+              SendMsgToUser(&all_users, nick, send_msg);
               SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg);
             }
+          } else {
+            ErrorHandler(client->sockfd, "PART: Not enough parameters", 
+                        ERR_NEEDMOREPARAMS);
           }
-            break;
+          break;
          
         case IRCCMD_NICK:
-          if (msg.cnt == 0)
+          if (msg.cnt == 0) {
+            ErrorHandler(client->sockfd, 
+                      "nickname parameter expected for a command and isn’t found",
+                       ERR_ERRONEUSNICKNAME);
             break;
+          }
+          if (msg.params[0][0] == '#') {
+            ErrorHandler(client->sockfd, "USER NICK: #nick invalid", ERR_ERRONEUSNICKNAME);
+            break; 
+          }
           printf("change nick: %s -> %s\n", nick, msg.params[0]);
-          if (RenameUser(&all_users, nick, msg.params[0]) == 0) { 
+          if ((ret = RenameUser(&all_users, nick, msg.params[0])) == 0) { 
             ret = strlen(msg.params[0]);
             strncpy(nick, msg.params[0], ret);
             nick[ret] = '\0';
           } else {
+            if (ret == IRC_USERERR_NOTFOUND) {
+              ErrorHandler(client->sockfd, "User not found", ERR_NICKNAMEINUSE);
+            } else if (ret == IRC_USERERR_EXIST) {
+              ErrorHandler(client->sockfd, "User exist", ERR_NICKNAMEINUSE);
+            }
             perror("RenameUser");
           }
           break;
           
         case IRCCMD_PING:
-          printf("PING : %d\n", msg.cnt);
           if (msg.cnt == 1) {
             FormPongMsg(&all_users, raw_msg, nick);
+          } else {
+            ErrorHandler(client->sockfd, "PING: Not enough parameters", 
+                        ERR_NEEDMOREPARAMS);
           }
           break;
           
@@ -156,7 +228,6 @@ void *ClientHandler(void *arg)
       FreeParsedMsg(&msg);
     }
   }
-  printf("current %d chan\n", chan_list.size);
   if (chan_list.size > 0) {
     for (ptr = chan_list.head; ptr != NULL; ptr = ptr->next)
       RemoveUserFromChannel(&all_chan, &all_users, ptr->chan, nick);
