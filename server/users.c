@@ -19,7 +19,6 @@ int RenameUser(struct IRCAllUsers *allusers, const char *oldnick,
                const char *newnick) {
   struct IRCUser *ptr;
   int ret = 0;
-  int duplication_flag = 0;
 
   if (!IsValidNick(oldnick) || !IsValidNick(newnick)) {
     return IRC_USERERR_NICK;
@@ -45,7 +44,7 @@ int AddUser(struct IRCAllUsers *allusers, const char *nick,
   int duplication_flag = 0;
 
   if (!IsValidNick(nick)) {
-    return ;
+    return IRC_USERERR_NICK;
   }
   pthread_mutex_lock(&allusers->lock);
   if (GetUserPtr(allusers, nick) != NULL) {

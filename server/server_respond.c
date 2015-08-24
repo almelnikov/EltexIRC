@@ -5,7 +5,40 @@ int SendConnectMsg(struct IRCAllUsers *allusers, const char *host,
   char buf[IRC_MSG_MAX_LENGTH + 1];
 
   sprintf(buf, ":%s 001 %s :Welcome to the IRC\r\n", host, nick);
-  SendMsgToUser(allusers, nick, buf);
+  return SendMsgToUser(allusers, nick, buf);
+}
+
+int SendAllChannelsList(int sock, struct IRCAllChannels *channels,
+                        const char *host, const char *nick) {
+
+  struct NamesList list;
+  char buf[IRC_MSG_MAX_LENGTH + 1];
+  int len;
+  int ret = 0;
+  int i;
+  int users_cnt;
+
+  list = GetChannelsList(channels);
+  if (list.names == NULL) {
+    return IRCERR_SCL_LIST;
+  }
+  i = 0;
+  for (i = 0; i < list.cnt; i++) {
+    users_cnt = 1;  // tmp
+    sprintf(buf, ":%s 322 %s %s %d : \r\n", host, nick, list.names[i], users_cnt);
+    len = strlen(buf);
+    if (write(sock, buf, len) != len) {
+      ret = IRCERR_SCL_WRITE;
+    }
+  }
+  sprintf(buf, ":%s 323 %s :End of LIST\r\n", host, nick);
+  len = strlen(buf);
+  if (write(sock, buf, len) != len) {
+    ret = IRCERR_SCL_WRITE;
+  }
+  FreeNamesList(&list);
+
+  return ret;
 }
 
 int SendChannelList(int sock, struct IRCAllChannels *channels,
@@ -14,7 +47,6 @@ int SendChannelList(int sock, struct IRCAllChannels *channels,
 
   struct NamesList list;
   char buf[IRC_MSG_MAX_LENGTH + 1];
-  int flag_exit = 0;
   int buf_len, len;
   int ret = 0;
   int i;
