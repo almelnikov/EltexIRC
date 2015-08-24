@@ -63,6 +63,7 @@ int SendChannelList(int sock, struct IRCAllChannels *channels,
     while (i < list.cnt) {
       sprintf(buf, ":%s 353 %s = %s :", host, nick, channame);
       buf_len = strlen(buf);
+//      printf("send to client 1: %s\n", buf);
       while ((buf_len + strlen(list.names[i]) + 1) < (IRC_MSG_MAX_LENGTH - 2)) {
         if (i != 0) {
           strcat(buf, " ");
@@ -76,12 +77,15 @@ int SendChannelList(int sock, struct IRCAllChannels *channels,
       }
       strcat(buf, "\r\n");
       len = strlen(buf);
+      printf("send to client 2: %s\n", buf);
       if (write(sock, buf, len) != len) {
         ret = IRCERR_SCL_WRITE;
       }
     }
     sprintf(buf, ":%s 366 %s %s :End of NAMES list.\r\n", host, nick, channame);
     len = strlen(buf);
+    printf("send to client 3: %s\n", buf);
+
     if (write(sock, buf, len) != len) {
         ret = IRCERR_SCL_WRITE;
     }

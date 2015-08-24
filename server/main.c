@@ -200,7 +200,6 @@ void *ClientHandler(void *arg)
                         ERR_NEEDMOREPARAMS);
           }
           break;
-          
         case IRCCMD_LIST:
           pthread_mutex_lock(&client->send_lock);
           SendAllChannelsList(client->sockfd, &all_chan, &all_users,
