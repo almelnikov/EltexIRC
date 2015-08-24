@@ -1,7 +1,7 @@
 #include "connect.h"
 #include "msgparse.h"
 #include "users.h"
-#include "users_list.h"
+#include "server_respond.h"
 
 int ErrorHandler(int sockfd, char *raw_msg, int numeric)
 {
@@ -110,13 +110,14 @@ void *ClientHandler(void *arg)
   if (!registered.flags.fail) {
     printf("successfully registered user: %s\n", nick);
     registered.flags.connect = 1;
+    SendConnectMsg(&all_users, "anonimus", nick);
     while (registered.flags.connect) {
       if ((bytes = IRCMsgRead(client->sockfd, raw_msg)) < 0) {
-				printf("disconnected...\n");
-				break;
-			}
+        printf("disconnected...\n");
+        break;
+      }
       printf("raw: %s len %d\n", raw_msg, (int)strlen(raw_msg));
-			FormParsedMsg(raw_msg, &msg);
+      FormParsedMsg(raw_msg, &msg);
 
       switch (msg.cmd) {
         case IRCCMD_QUIT:
@@ -135,7 +136,7 @@ void *ClientHandler(void *arg)
             ErrorHandler(client->sockfd, "JOIN :Not enough parameters", ERR_NEEDMOREPARAMS);
             break;
           }
-          if (AddUserToChannel(&all_chan, &all_users, msg.params[0], 
+          if (AddUserToChannel(&all_chan, &all_users, msg.params[0],
                               nick) == 0) {
             printf("add to channel %s\n", msg.params[0]);
             chan_list.head = ThrListAddFront(&chan_list, msg.params[0]);
@@ -177,8 +178,9 @@ void *ClientHandler(void *arg)
             chan_list.head = DeleteThrNode(&chan_list, msg.params[0]);
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               printf("send %s \nto %s\n", send_msg, msg.params[0]);
-              SendMsgToUser(&all_users, nick, send_msg);
+              pthread_mutex_lock(&client->send_lock);
               SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg);
+              pthread_mutex_unlock(&client->send_lock);
             }
           } else {
             ErrorHandler(client->sockfd, "PART: Not enough parameters", 
@@ -222,7 +224,10 @@ void *ClientHandler(void *arg)
           break;
           
         case IRCCMD_LIST:
-          FormChanList(&all_chan, &all_users, nick);
+          pthread_mutex_lock(&client->send_lock);
+          SendAllChannelsList(client->sockfd, &all_chan, &all_users,
+                              "anonimus", nick);
+          pthread_mutex_unlock(&client->send_lock);
           break;
       }
       FreeParsedMsg(&msg);
