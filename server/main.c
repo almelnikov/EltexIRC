@@ -148,7 +148,6 @@ void *ClientHandler(void *arg)
             FormPongMsg(&all_users, raw_msg, nick);
           }
           break;
-          
         case IRCCMD_LIST:
           FormChanList(&all_chan, &all_users, nick);
           break;

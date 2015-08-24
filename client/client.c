@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include<netinet/in.h>
 #include<sys/socket.h>
+#include <sys/sem.h>
 #include <arpa/inet.h>
 #include "irc_msgread.h"
 #include "msgparse.h"
@@ -36,7 +37,7 @@ struct queue_sms {
 	struct queue_sms *next;
 };
 
-struct queue_sms *list = NULL, *sever = NULL;
+struct queue_sms *list = NULL, *sever = NULL, *sender = NULL;
 
 struct queue_sms *new(char *buf, char *canal)
 {
@@ -128,7 +129,7 @@ void init()
     cbreak();
     noecho();
 
-    strcpy(now_canal, "server");
+    strcpy(now_canal, "#server");
     offset_all = 0;
 
     keypad(stdscr, TRUE);
@@ -200,9 +201,10 @@ void read_name()
     fd = fopen("name_server", "w+");
     assert(fd != NULL);
 
-    fwrite("1\n", strlen("1\n"), 1, fd);
+    fwrite("2\n", strlen("2\n"), 1, fd);
     fwrite(my_name, strlen(my_name), 1, fd);
-    
+    fwrite("\n", strlen("\n"), 1, fd);
+    fwrite("lida", strlen("lida"), 1, fd);
     fclose(fd);
 
     fd = fopen("name_server", "r");
@@ -467,10 +469,25 @@ void IrcMsgSend_user(char *buf_input)
 }
 
 
+struct sembuf lock[2] = {
+	{ 0, 0, 0 },
+	{ 0, 1, 0 }
+};
+
+struct sembuf unlock[1] = {
+	{ 0, -1, 0 }
+};
+
+
 void irc()
 {
     char buf_input[512];
-    int err;
+    int err, sem;
+    key_t key_sem;
+    
+    key_sem = ftok("client.c", 'A');
+    sem = semget(key_sem, 3, 0666 | IPC_CREAT);
+
     //all + key
     exit_client = 1;
     memset(buf_input, 0, 512);
@@ -482,11 +499,15 @@ void irc()
 	    continue;
 	}
 	if((buf_input[0] != '/') && (err == INPUT_N)) {
+	    semop(sem, lock, 2);
 	    list = add(list, buf_input, now_canal);
+	    semop(sem, unlock, 1);
 	    IrcMsgSend_canal(buf_input);
 	}
 	else if((buf_input[0] != '/') && (err == USER_N)) {
+	    semop(sem, lock, 2);
 	    list = add(list, buf_input, now_canal);
+	    semop(sem, unlock, 1);
 	    IrcMsgSend_user(buf_input);
 	}
 	else if((buf_input[0] == '/')){
@@ -498,13 +519,90 @@ void irc()
     }
 }
 
+int ParsedStructServer(struct ParsedMsg *message)
+{
+    char tmp_name[512];
+    memset(tmp_name, 0, 512);
+
+    switch(message->cmd) {
+	case IRCCMD_PRIVMSG: {
+	    if(message->cnt < 2) return -1;
+	    if(message->params[0][0] == '#') {
+		list = add(list, message->params[0], message->params[1]);
+	    }
+	    else {
+		mvwprintw(sub_chat, 10, 0, "buf %s !!!\n", message->params[1]);
+		strcpy(tmp_name, message->params[0]);
+		strcat(tmp_name, ":");
+		strcat(tmp_name, message->params[1]);
+		list = add(list, tmp_name, now_canal);
+	    }
+	    break;
+	}
+	case IRCCMD_JOIN: {
+	    if(message->cnt < 1) return -1;
+	    strcat(canal_name, "\n");
+	    strcat(canal_name, message->params[0]);
+	    count_canal++;
+	    write_canal();
+	    wmove(sub_input, 0, 0);
+	    refresh();
+	    wrefresh(sub_input);
+	    break;
+	}
+	default: {
+	    list = add(list, message->params[0], "#server");
+	    break;
+	}
+	break;
+    }
+    return 0;
+}
+
+void *listen_server(void *arg) 
+{
+    char buf_stock[512];
+    struct ParsedMsg message;
+    int err, err_parse;
+//    key_t key_sem;
+    
+//    key_sem = ftok("client.c", 'A');
+//    sem = semget(key_sem, 3, 0666 | IPC_CREAT);
+    while(exit_client != 0) {
+	memset(buf_stock, 0, 512);
+	err = IRCMsgRead(sock, buf_stock);
+//	mvwprintw(sub_chat, 0, 0, "%s", buf_stock);
+	if(err == -1) exit_client = 0;
+	FormParsedMsg(buf_stock, &message);
+//	usleep(100);
+	err_parse = ParsedStructServer(&message);
+	if(err_parse == -1) continue;
+//	memset(buf_stock, 0, 512);
+	FreeParsedMsg(&message);
+	refresh();
+	wrefresh(sub_chat);
+//	semop(sem, unlock, 1);
+    }
+//    exit_client = 0;
+//    semctl(sem, IPC_RMID, 0);
+}
+
 void *get_message(void *arg)
 {
     struct queue_sms *p = NULL, *prev = NULL;
-    int offset_dev = 0;
+    int offset_dev = 0, sem, pth_listen;
+    pthread_t lis_server;
+//    key_t key_sem;
+    
+//    key_sem = ftok("client.c", 'A');
+//    sem = semget(key_sem, 3, 0666 | IPC_CREAT);
+
+
 
     while(exit_client != 0) {
-	for(p = list; p != NULL ; p = p->next) {
+	for(p = list; p != NULL; p = p->next) {
+
+//	    semop(sem, lock, 2);
 	    if(strcmp(p->window, now_canal) == 0) {
 		usleep(10);
 		mvwprintw(sub_chat, 0 + offset_all, 0, "%s:%s", p->window, p->buf);
@@ -541,7 +639,10 @@ void *get_message(void *arg)
 		wrefresh(sub_chat);
 		wmove(sub_input, 0, 0);
 		wrefresh(sub_input);
+		pth_listen = pthread_create(&lis_server, NULL, listen_server, NULL);
+		assert(pth_listen == 0);
 	    }
+//	    semop(sem, unlock, 1);
 	}
     }
     return NULL;
@@ -592,59 +693,10 @@ void send_start_sms()
     send(sock, start_sms, strlen(start_sms), 0);
 }
 
-int ParsedStructServer(struct ParsedMsg *message)
-{
-    switch(message->cmd) {
-	case IRCCMD_PRIVMSG: {
-	    if(message->cnt < 2) return -1;
-	    if(message->params[0][0] == '#') {
-		list = add(list, message->params[0], message->params[1]);
-		refresh();
-	    }
-	    else {
-		list = add(list, message->params[0], now_canal);
-		refresh();
-	    }
-	    break;
-	}
-	case IRCCMD_JOIN: {
-	    if(message->cnt < 1) return -1;
-	    strcat(canal_name, "\n");
-	    strcat(canal_name, message->params[0]);
-	    count_canal++;
-	    write_canal();
-	    break;
-	}
-	default: {
-	    list = add(list, message->params[1], "server");
-	    break;
-	}
-    }
-    return 0;
-}
-
-void *listen_server(void *arg) 
-{
-    char buf_stock[512];
-    struct ParsedMsg message;
-    int err, err_parse;
-
-    for(;;) {
-	memset(buf_stock, 0, 512);
-	err = IRCMsgRead(sock, buf_stock);
-	if(err == -1) break;
-	FormParsedMsg(buf_stock, &message);
-	err_parse = ParsedStructServer(&message);
-	if(err_parse == -1) continue;
-	memset(buf_stock, 0, 512);
-    }
-    exit_client = 0;
-}
-
 int main(int argc, char **argv)
 {
-    pthread_t pth, lis_server;
-    int pth_get, pth_listen;
+    pthread_t pth;
+    int pth_get;
     
     connect_sock(argc, argv);
     send_start_sms();
@@ -658,8 +710,6 @@ int main(int argc, char **argv)
     pth_get = pthread_create(&pth, NULL, get_message, NULL);
     assert(pth_get == 0);
 
-    pth_listen = pthread_create(&lis_server, NULL, listen_server, NULL);
-    assert(pth_listen == 0);
 
     irc();
 
