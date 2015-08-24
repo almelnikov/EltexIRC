@@ -155,6 +155,7 @@ void *ClientHandler(void *arg)
             chan_list.head = DeleteThrNode(&chan_list, msg.params[0]);
             if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               printf("send %s \nto %s\n", send_msg, msg.params[0]);
+              SendMsgToUser(&all_users, nick, send_msg);
               pthread_mutex_lock(&client->send_lock);
               SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg);
               pthread_mutex_unlock(&client->send_lock);
