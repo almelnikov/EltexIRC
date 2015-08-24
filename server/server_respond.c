@@ -36,6 +36,7 @@ int SendAllChannelsList(int sock, struct IRCAllChannels *channels,
     if (write(sock, buf, len) != len) {
       ret = IRCERR_SCL_WRITE;
     }
+    FreeNamesList(&chan_list);
   }
   sprintf(buf, ":%s 323 %s :End of LIST\r\n", host, nick);
   len = strlen(buf);
