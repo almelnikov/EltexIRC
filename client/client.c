@@ -183,6 +183,7 @@ void write_canal()
 {
   int pos = 0;
   static int index_canal = 0;
+  wclear(sub_canal);
   wmove(sub_canal, 0, 0);
 
   for( ; index_canal < strlen(canal_name); index_canal++) {
@@ -533,36 +534,6 @@ void irc()
 int StrCanalName(char *canal)
 {
   char name[68];
-  int i = 0, j = 0, k = 0;
-  
-  while(canal_name[j] != '\0') {
-	mvwprintw(sub_chat, 15, 0, "%s", canal);
-	refresh();
-	wrefresh(sub_chat);
-	for(i = 0; i < 68 && canal_name[j] != '\n' && canal_name[j] != '\0';
-		    i++, j++)
-	  name[i] = canal_name[j];
-	name[i] = '\0';
-	j++;
-	mvwprintw(sub_chat, 15, 0, "%s == %s", canal, name);
-	refresh();
-	wrefresh(sub_chat);
-	if(strcmp(name, canal) == 0) {
-	    for(k = j - (strlen(name)); canal_name[j] != '\0'; k++, j++) 
-		canal_name[k] = canal_name[j];
-	    for(; k != j; k++)
-		canal_name[k] = '\0';
-	}
-	memset(name, 0, 68);
-  }
-  
-  return 0;
-}
-
-
-int StrCanalDell(char *canal)
-{
-  char name[68];
   int i = 0, j = 0;
   
   while(canal_name[j] != '\0') {
@@ -581,6 +552,35 @@ int StrCanalDell(char *canal)
 	memset(name, 0, 68);
   }
   
+  return 0;
+}
+
+
+int StrCanalDell(char *canal)
+{
+  char name[68];
+  int i = 0, j = 0, k = 0;
+  
+  while(canal_name[j] != '\0') {
+	mvwprintw(sub_chat, 15, 0, "%s", canal);
+	refresh();
+	wrefresh(sub_chat);
+	for(i = 0; i < 68 && canal_name[j] != '\n' && canal_name[j] != '\0';
+		    i++, j++)
+	  name[i] = canal_name[j];
+	name[i] = '\0';
+	j++;
+	mvwprintw(sub_chat, 15, 0, "%s == %s", canal, name);
+	refresh();
+	wrefresh(sub_chat);
+	if(strcmp(name, canal) == 0) {
+	    for(k = j - (strlen(name)) - 2; canal_name[j] != '\0'; k++, j++) 
+		canal_name[k] = canal_name[j];
+	    for(; k != j; k++)
+		canal_name[k] = '\0';
+	}
+	memset(name, 0, 68);
+  }
   return 0;
 }
 
@@ -685,13 +685,14 @@ int ParsedStructServer(struct ParsedMsg *message)
 	    memset(nick, 0, 68);
 	    strcpy(nick, GetNickFromHost(message));
 	    if(strcmp(nick, my_name) == 0) {
-	        if(StrCanalName(message->params[0]) == 0) {
+	        if(StrCanalName(message->params[0]) == 1) {
 		    StrCanalDell(message->params[0]);
 		    count_canal--;
 		    write_canal();
 		}
 		else break;
 	    }
+	    break;
 	}
 	default: {
 	  if(message->cnt == 0) return -1;
