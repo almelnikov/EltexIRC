@@ -5,7 +5,9 @@ int SendMsgToUser(struct IRCAllUsers *allusers, const char *nick,
   int ret = 0;
   struct IRCUser *ptr;
   struct Client *thr_info;
+  int written, len;
 
+  len = strlen(msg);
   pthread_mutex_lock(&allusers->lock);
   ptr = GetUserPtr(allusers, nick);
   if (ptr == NULL) {
@@ -13,10 +15,13 @@ int SendMsgToUser(struct IRCAllUsers *allusers, const char *nick,
   } else {
     thr_info = ptr->thr_info;
     pthread_mutex_lock(&thr_info->send_lock);
-    write(thr_info->sockfd, msg, strlen(msg));
+    written = write(thr_info->sockfd, msg, len);
     pthread_mutex_unlock(&thr_info->send_lock);
   }
   pthread_mutex_unlock(&allusers->lock);
+  if (written != len) {
+    ret = -1;
+  }
   return ret;
 }
 
@@ -28,7 +33,10 @@ int SendMsgToChannel(struct IRCAllChannels *channels,
   struct IRCChannel *chan_ptr;
   struct Client *thr_info;
   char *str;
+  int written, len;
 
+
+  len = strlen(msg);
   pthread_mutex_lock(&channels->lock);
   pthread_mutex_lock(&allusers->lock);
   chan_ptr = GetChannelPtr(channels, channame);
@@ -41,7 +49,7 @@ int SendMsgToChannel(struct IRCAllChannels *channels,
         if (strncmp(str, nick, IRC_NICK_MAX_LENGTH) != 0) {
           thr_info = chan_ptr->users[i]->thr_info;
           pthread_mutex_lock(&thr_info->send_lock);
-          write(thr_info->sockfd, msg, strlen(msg));
+          written = write(thr_info->sockfd, msg, len);
           pthread_mutex_unlock(&thr_info->send_lock);
         }
       }
@@ -49,5 +57,8 @@ int SendMsgToChannel(struct IRCAllChannels *channels,
   }
   pthread_mutex_unlock(&allusers->lock);
   pthread_mutex_unlock(&channels->lock);
+  if (written != len) {
+    ret = -1;
+  }
   return ret;
 }

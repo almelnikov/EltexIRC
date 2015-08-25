@@ -4,17 +4,10 @@
 *.tmp
 *.swp
 Makefile
-Makefile.in
 aclocal.m4
 autom4te.cache/
-compile
 config.log
 config.status
-configure
-depcomp
-install-sh
-missing
 */.deps/
 server/1
 server/Makefile
-server/Makefile.in

@@ -109,5 +109,26 @@ int FormPongMsg(struct IRCAllUsers *users, char *raw_msg, char *nick)
     SendMsgToUser(users, nick, send_msg);
     
   return 0;
+}
+
+int ErrorHandler(int sockfd, char *raw_msg, int numeric)
+{
+  char hostname[IRC_HOST_MAX_LENGTH];
+  char buf[IRC_MSG_MAX_LENGTH];
+  size_t len = 0, bytes = 0;
   
+  memset(&hostname, 0, IRC_HOST_MAX_LENGTH);
+  memset(&buf, 0, IRC_MSG_MAX_LENGTH);
+  
+  gethostname(hostname, IRC_HOST_MAX_LENGTH - 1);
+  
+  snprintf(buf, IRC_MSG_MAX_LENGTH, ":%s %d : %s\r\n", hostname, numeric, raw_msg);
+  
+  printf("Error Msg: %s\n", buf);
+  len = strlen(buf);
+  
+  if ((bytes = write(sockfd, buf, len)) > 0)
+    return bytes;
+  else 
+    return -1;
 }
