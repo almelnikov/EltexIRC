@@ -123,7 +123,8 @@ void *ClientHandler(void *arg)
           if (msg.cnt != 0) {
             RemoveUserFromChannel(&all_chan, &all_users, msg.params[0], nick);
             chan_list.head = DeleteThrNode(&chan_list, msg.params[0]);
-            if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
+            printf("list dell: %s %d\n", msg.params[0], msg.cmd);
+	    if (FormSendMsg(send_msg, raw_msg, nick) == 0) {
               printf("send %s \nto %s\n", send_msg, msg.params[0]);
               pthread_mutex_lock(&client->send_lock);
               SendMsgToChannel(&all_chan, &all_users, msg.params[0], nick, send_msg);

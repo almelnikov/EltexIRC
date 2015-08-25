@@ -145,7 +145,8 @@ void init()
 
 void print_information()
 {
-	mvwprintw(sub_info, 0, 0, "Hello, you on chat, your name %s!!! exit sms: EXIT", my_name);
+	mvwprintw(sub_info, 0, 0, 
+	    "Hello, you on chat, your name %s!!! exit sms: EXIT", my_name);
 	refresh();
 	wrefresh(sub_info);
 }
@@ -267,7 +268,8 @@ void restart()
 	  offset_all += ((strlen(p->buf))/count_col);
 	}
 	if (offset_all >= count_row) {
-	  for(prev = sever; prev != NULL && strcmp(prev->window, now_canal) != 0; prev = prev->next);
+	  for(prev = sever; prev != NULL && strcmp(prev->window, now_canal) != 0;
+			     prev = prev->next);
 	  memset(prev->buf, 0, 512);
 	  sever = del(sever, prev);
 	  offset_all -= 3;
@@ -291,7 +293,8 @@ void restart()
 
 int key(char *buf_input)
 {
-  int key = 0, flag = INPUT_N, x = 0, y_us = 0, y_can = 0, count_y = 0, count_y_us = 0;
+  int key = 0, flag = INPUT_N, x = 0, y_us = 0, y_can = 0;
+  int count_y = 0, count_y_us = 0;
   chtype c_canal[68], c_user[68];
   char name_canal[68], name_user[68], buf_tmp[512];
   int index_n_c = 0;
@@ -394,7 +397,8 @@ int key(char *buf_input)
 	
 	memset(name_canal, 0, 68);
 	memset(now_canal, 0, 68);
-	for(index_n_c = 0; (index_n_c < 68) && (c_canal[index_n_c] != ' '); index_n_c++)
+	for(index_n_c = 0; (index_n_c < 68) && (c_canal[index_n_c] != ' ');
+				    index_n_c++)
 	  name_canal[index_n_c] = (c_canal[index_n_c] & A_CHARTEXT);
 	strcpy(now_canal, name_canal);
 	offset_all = 0;
@@ -529,13 +533,44 @@ void irc()
 int StrCanalName(char *canal)
 {
   char name[68];
+  int i = 0, j = 0, k = 0;
+  
+  while(canal_name[j] != '\0') {
+	mvwprintw(sub_chat, 15, 0, "%s", canal);
+	refresh();
+	wrefresh(sub_chat);
+	for(i = 0; i < 68 && canal_name[j] != '\n' && canal_name[j] != '\0';
+		    i++, j++)
+	  name[i] = canal_name[j];
+	name[i] = '\0';
+	j++;
+	mvwprintw(sub_chat, 15, 0, "%s == %s", canal, name);
+	refresh();
+	wrefresh(sub_chat);
+	if(strcmp(name, canal) == 0) {
+	    for(k = j - (strlen(name)); canal_name[j] != '\0'; k++, j++) 
+		canal_name[k] = canal_name[j];
+	    for(; k != j; k++)
+		canal_name[k] = '\0';
+	}
+	memset(name, 0, 68);
+  }
+  
+  return 0;
+}
+
+
+int StrCanalDell(char *canal)
+{
+  char name[68];
   int i = 0, j = 0;
   
   while(canal_name[j] != '\0') {
 	mvwprintw(sub_chat, 15, 0, "%s", canal);
 	refresh();
 	wrefresh(sub_chat);
-	for(i = 0; i < 68 && canal_name[j] != '\n' && canal_name[j] != '\0'; i++, j++)
+	for(i = 0; i < 68 && canal_name[j] != '\n' && canal_name[j] != '\0';
+		    i++, j++)
 	  name[i] = canal_name[j];
 	name[i] = '\0';
 	j++;
@@ -549,9 +584,10 @@ int StrCanalName(char *canal)
   return 0;
 }
 
+
 int ParsedStructServer(struct ParsedMsg *message)
 {
-  char tmp_name[512];
+  char tmp_name[512], nick[68];
   int ind = 0, y_ind = 0;
   memset(tmp_name, 0, 512);
 
@@ -563,7 +599,6 @@ int ParsedStructServer(struct ParsedMsg *message)
 	  }
 	  else {
 		memset(tmp_name, 0, 512);
-		//mvwprintw(sub_chat, 10, 0, "buf %s !!!\n", message->params[1]);
 		strcpy(tmp_name, message->params[0]);
 		strcat(tmp_name, ":");
 		strcat(tmp_name, message->params[1]);
@@ -577,6 +612,7 @@ int ParsedStructServer(struct ParsedMsg *message)
 	  ind++;
 	  refresh();
 	  wrefresh(sub_canal);
+	  wrefresh(sub_chat);
 	  if(StrCanalName(message->params[0]) == 0) {
 		if(canal_name[0] != '\0') {
 		  strcat(canal_name, "\n");
@@ -588,6 +624,22 @@ int ParsedStructServer(struct ParsedMsg *message)
 		count_canal++;
 		write_canal();
 	  }
+	  else {
+	    strcpy(nick, GetNickFromHost(message));
+	    mvwprintw(sub_chat, 20, 0, "nick %s", nick);
+	    refresh();
+	    wrefresh(sub_chat);
+	    if(nick == NULL) break;
+	    else {
+		count_user++;
+		strcat(user_name, "\n");
+		strcat(user_name, tmp_name);
+		write_name();
+		wmove(sub_input, 0, 0);
+		refresh();
+		wrefresh(sub_input);
+	    }
+	  }
 	  wmove(sub_input, 0, 0);
 	  refresh();
 	  wrefresh(sub_input);
@@ -597,10 +649,12 @@ int ParsedStructServer(struct ParsedMsg *message)
 	  if(message->cnt < 1) return -1;
 	  if(message->numeric == 353 && strcmp(message->params[(message->cnt) - 2], now_canal) == 0) {
 		wclear(sub_user);
-		while(message->params[(message->cnt) - 1][y_ind] != '\0' && y_ind < strlen(message->params[(message->cnt) - 1])) {
+		while(message->params[(message->cnt) - 1][y_ind] != '\0' && 
+			    y_ind < strlen(message->params[(message->cnt) - 1])) {
 		  if(user_name[0] != '\0') {
 			strcat(user_name, "\n");
-			for(ind = 0; ind < 512 && y_ind < strlen(message->params[(message->cnt) - 1]) && message->params[(message->cnt) - 1][y_ind] != ' '; ind++, y_ind++)
+			for(ind = 0; ind < 512 && y_ind < strlen(message->params[(message->cnt) - 1]) && 
+					    message->params[(message->cnt) - 1][y_ind] != ' '; ind++, y_ind++)
 			  tmp_name[ind] = message->params[(message->cnt) - 1][y_ind];
 			tmp_name[ind] = '\0';
 			count_user++;
@@ -609,7 +663,8 @@ int ParsedStructServer(struct ParsedMsg *message)
 			memset(tmp_name, 0, 512);
 		  }
 		  else {
-			for(ind = 0; ind < 512 && y_ind < strlen(message->params[(message->cnt) - 1]) && message->params[(message->cnt) - 1][y_ind] != ' '; ind++, y_ind++)
+			for(ind = 0; ind < 512 && y_ind < strlen(message->params[(message->cnt) - 1]) && 
+					    message->params[(message->cnt) - 1][y_ind] != ' '; ind++, y_ind++)
 			  tmp_name[ind] = message->params[(message->cnt) - 1][ind];
 			tmp_name[ind] = '\0';
 			count_user++;
@@ -625,6 +680,18 @@ int ParsedStructServer(struct ParsedMsg *message)
 		wrefresh(sub_input);
 	  }
 	  break;
+	}
+	case IRCCMD_PART: {
+	    memset(nick, 0, 68);
+	    strcpy(nick, GetNickFromHost(message));
+	    if(strcmp(nick, my_name) == 0) {
+	        if(StrCanalName(message->params[0]) == 0) {
+		    StrCanalDell(message->params[0]);
+		    count_canal--;
+		    write_canal();
+		}
+		else break;
+	    }
 	}
 	default: {
 	  if(message->cnt == 0) return -1;
@@ -645,10 +712,11 @@ void *listen_server(void *arg)
   while(exit_client != 0) {
 	memset(buf_stock, 0, 512);
 	err = IRCMsgRead(sock, buf_stock);
-	/*mvwprintw(sub_chat, 12, 0, "0 %s", buf_stock);
+
+	mvwprintw(sub_chat, 12, 0, "COMMAND %s", buf_stock);
 	refresh();
 	wrefresh(sub_chat);
-*/
+
 	if(err == -1) exit_client = 0;
 	FormParsedMsg(buf_stock, &message);
 	err_parse = ParsedStructServer(&message);
@@ -678,7 +746,8 @@ void *get_message(void *arg)
 		  offset_all += ((strlen(p->buf))/count_col);
 		}
 		if (offset_all >= count_row) {
-			for(prev = sever; prev != NULL && strcmp(prev->window, now_canal) != 0; prev = prev->next);
+			for(prev = sever; prev != NULL && strcmp(prev->window, now_canal) != 0;
+						    prev = prev->next);
 			memset(prev->buf, 0, 512);
 			sever = del(sever, prev);
 			usleep(10);
